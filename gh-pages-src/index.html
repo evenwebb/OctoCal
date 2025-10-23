@@ -90,6 +90,28 @@
             font-weight: 600;
         }
 
+        .reminder-note {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: start;
+            gap: 12px;
+        }
+
+        .reminder-note .icon {
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+
+        .reminder-note p {
+            line-height: 1.6;
+            font-size: 0.95em;
+            color: #0d47a1;
+        }
+
         .calendar-buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -240,6 +262,11 @@
 
         <h2>📅 Add to Your Calendar</h2>
 
+        <div class="reminder-note">
+            <div class="icon">🔔</div>
+            <p><strong>Note:</strong> This calendar includes built-in reminders (1 day before and 15 minutes before each session). When subscribing, your calendar app may ask if you want to import these reminders - you can choose to disable them if you prefer not to receive notifications.</p>
+        </div>
+
         <div class="calendar-buttons">
             <a href="webcal://evenwebb.github.io/OctoCal/octopus_free_electricity.ics" class="calendar-btn">
                 <span class="icon">🍎</span>
@@ -248,6 +275,10 @@
             <a href="https://calendar.google.com/calendar/render?cid=webcal://evenwebb.github.io/OctoCal/octopus_free_electricity.ics" class="calendar-btn" target="_blank">
                 <span class="icon">📆</span>
                 <span>Google Calendar</span>
+            </a>
+            <a href="octopus_free_electricity.ics" class="calendar-btn" download>
+                <span class="icon">📥</span>
+                <span>Download .ics</span>
             </a>
         </div>
 
@@ -287,13 +318,27 @@
             </div>
         </div>
 
+        <div class="referral-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; padding: 25px; margin: 30px 0; color: white; text-align: center;">
+            <h2 style="color: white; margin: 0 0 15px 0; font-size: 1.6em;">💚 Not with Octopus Energy Yet?</h2>
+            <p style="font-size: 1.1em; margin-bottom: 15px; line-height: 1.6;">
+                Octopus Energy is leading the charge in renewable energy with transparent pricing, award-winning customer service, and innovative tools to help you save money and reduce your carbon footprint.
+            </p>
+            <p style="font-size: 1.05em; margin-bottom: 20px;">
+                <strong>Switch today and we'll both get £50 credit!</strong> Plus, you'll be supporting this project. 🎉
+            </p>
+            <a href="https://share.octopus.energy/brass-okapi-797" target="_blank" style="display: inline-block; background: white; color: #f5576c; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 1.1em; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease;">
+                Get £50 Credit & Support OctoCal
+            </a>
+        </div>
+
         <div class="footer">
             <p>
                 This is an unofficial community project. Not affiliated with Octopus Energy.<br>
                 Data scraped from <a href="https://octopus.energy/free-electricity/" target="_blank">octopus.energy/free-electricity</a>
             </p>
             <p style="margin-top: 15px;">
-                <a href="https://github.com/evenwebb/OctoCal" target="_blank">View Source on GitHub</a>
+                <a href="https://github.com/evenwebb/OctoCal" target="_blank">View Source on GitHub</a> •
+                Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GNU GPL v3</a>
             </p>
         </div>
     </div>

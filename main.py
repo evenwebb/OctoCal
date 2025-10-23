@@ -7,7 +7,7 @@ import time
 import json
 import yaml
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Set
 from octopus_scraper import OctopusScraper
 from session_parser import SessionParser, Session
@@ -270,12 +270,30 @@ class OctopusEnergyMonitor:
             logging.info("No sessions to write to iCal")
             return
 
-        # Filter out past sessions
-        now = datetime.now()
-        upcoming_sessions = [s for s in self.sessions if s.end_time > now]
+        # Get cleanup settings
+        cleanup_enabled = get_config_value(self.config, 'ical.cleanup.enabled', True)
+        days_to_keep = get_config_value(self.config, 'ical.cleanup.days_to_keep', 7)
 
-        if not upcoming_sessions:
-            logging.info("No upcoming sessions to write to iCal")
+        now = datetime.now()
+
+        # Filter sessions based on cleanup settings
+        if cleanup_enabled:
+            # Remove sessions older than days_to_keep
+            cutoff_date = now - timedelta(days=days_to_keep)
+            filtered_sessions = [s for s in self.sessions if s.end_time > cutoff_date]
+            removed_count = len(self.sessions) - len(filtered_sessions)
+            if removed_count > 0:
+                logging.info(f"Removed {removed_count} session(s) older than {days_to_keep} days")
+        else:
+            # Keep all sessions (including past ones)
+            filtered_sessions = self.sessions
+
+        # Separate upcoming and recent past sessions for logging
+        upcoming_sessions = [s for s in filtered_sessions if s.end_time > now]
+        past_sessions = [s for s in filtered_sessions if s.end_time <= now]
+
+        if not filtered_sessions:
+            logging.info("No sessions to write to iCal")
             return
 
         # Get iCal output path
@@ -283,8 +301,8 @@ class OctopusEnergyMonitor:
         filename = get_config_value(self.config, 'ical.filename', 'octopus_free_electricity.ics')
         ical_output_path = output_dir / filename
 
-        logging.info(f"Updating iCal file with {len(upcoming_sessions)} session(s)...")
-        success = self.ical_generator.generate(upcoming_sessions, ical_output_path)
+        logging.info(f"Updating iCal file with {len(filtered_sessions)} session(s) ({len(upcoming_sessions)} upcoming, {len(past_sessions)} recent past)...")
+        success = self.ical_generator.generate(filtered_sessions, ical_output_path)
 
         if success:
             logging.info(f"iCal file updated: {ical_output_path}")

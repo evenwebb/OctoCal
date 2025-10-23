@@ -11,12 +11,14 @@ OctoCal automatically scrapes the Octopus Energy website for free electricity sl
 - 🐙 Scrapes https://octopus.energy/free-electricity/ for upcoming free electricity sessions
 - 📅 Generates iCal (.ics) calendar file with GMT timezone
 - 🔔 Configurable calendar alarms (1 day before, 15 minutes before, etc.)
+- 🧹 Auto-cleanup of old sessions (configurable days to keep, default 7 days)
 - 📱 Optional Apprise notifications (Discord, Telegram, Email, Slack, and many more)
 - ⚙️ GitHub Actions ready - automated hourly scraping with zero maintenance
 - 🌐 Beautiful GitHub Pages website for easy calendar subscription
 - 🔄 Separate scrape/notification intervals for reliable notifications
 - 💾 Persistent state tracking to avoid duplicate notifications
 - 🎨 Clean, refactored, and optimized code
+- 📜 Open source under GNU GPL v3
 
 ## Two Ways to Use
 
@@ -70,10 +72,11 @@ The easiest way to use this is via **GitHub Actions** with automatic deployment 
 
 1. **Fork this repository** on GitHub
 
-2. **Update the HTML file** with your GitHub info:
+2. **Update the HTML file** with your GitHub info (if forking):
    - Edit `gh-pages-src/index.html`
    - Replace `evenwebb` with your GitHub username
    - Replace `OctoCal` with your repository name (or keep it as OctoCal!)
+   - Replace `brass-okapi-797` with your Octopus Energy referral code (or remove the referral section)
 
 3. **Enable GitHub Pages**:
    - Go to repo Settings → Pages

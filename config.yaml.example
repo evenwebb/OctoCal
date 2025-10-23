@@ -26,6 +26,11 @@ ical:
     #   [1440, 15] = Alarm 1 day before and 15 minutes before (good for GitHub Actions)
     times: [1440, 15]  # Default: 1 day before and 15 min before (GitHub Actions optimized)
 
+  # Cleanup old sessions from calendar
+  cleanup:
+    enabled: true  # Set to false to keep all past sessions in calendar
+    days_to_keep: 7  # Remove sessions older than this many days (default: 7)
+
 # Notification settings
 # NOTE: These are LIVE notifications sent via Apprise (Discord, Telegram, etc.)
 # They are separate from calendar alarms above. You can enable one, both, or neither.
