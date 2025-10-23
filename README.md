@@ -1,6 +1,10 @@
-# Octopus Energy Free Electricity Scraper
+# 🐙⚡ OctoCal
 
-Automatically scrapes the Octopus Energy website for free electricity slots, creates an iCal calendar file, and sends notifications via Apprise.
+**Never miss an Octopus Energy free electricity session!**
+
+OctoCal automatically scrapes the Octopus Energy website for free electricity slots, creates an iCal calendar file, and sends notifications via Apprise.
+
+🔗 **Live Calendar**: https://evenwebb.github.io/OctoCal/
 
 ## Features
 
@@ -66,10 +70,10 @@ The easiest way to use this is via **GitHub Actions** with automatic deployment 
 
 1. **Fork this repository** on GitHub
 
-2. **Update the HTML file** with your GitHub username/repo:
+2. **Update the HTML file** with your GitHub info:
    - Edit `gh-pages-src/index.html`
-   - Replace `YOUR_GITHUB_USERNAME` with your GitHub username
-   - Replace `YOUR_REPO_NAME` with your repository name
+   - Replace `evenwebb` with your GitHub username
+   - Replace `OctoCal` with your repository name (or keep it as OctoCal!)
 
 3. **Enable GitHub Pages**:
    - Go to repo Settings → Pages
@@ -83,8 +87,10 @@ The easiest way to use this is via **GitHub Actions** with automatic deployment 
    - Click "Run workflow"
 
 5. **Access your calendar**:
-   - Visit: `https://[username].github.io/[repo-name]/`
+   - Visit: `https://[your-username].github.io/[your-repo-name]/`
    - Subscribe to the calendar from the webpage!
+
+> **Note**: The original OctoCal is live at https://evenwebb.github.io/OctoCal/ if you just want to use it without forking!
 
 ### How It Works
 

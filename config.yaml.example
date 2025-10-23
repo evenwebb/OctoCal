@@ -1,6 +1,12 @@
 # Octopus Energy Free Electricity Scraper Configuration
 #
 # For local use: Copy this file to 'config.yaml' and edit it with your settings.
+# For GitHub Actions: This file is used automatically (no need to create config.yaml)
+
+# Scraper settings
+scraper:
+  url: "https://octopus.energy/free-electricity/"
+  check_interval_minutes: 60  # How often to check for new sessions
 
 # iCal settings
 ical:
@@ -50,8 +56,3 @@ notifications:
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
   log_file: "./output/octopus_scraper.log"
-
-# Scraper settings
-scraper:
-  url: "https://octopus.energy/free-electricity/"
-  check_interval_minutes: 60  # How often to check for new sessions

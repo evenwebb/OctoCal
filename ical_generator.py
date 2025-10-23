@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from icalendar import Calendar, Event, Alarm, vText
 from session_parser import Session
@@ -101,22 +101,13 @@ class ICalGenerator:
 
                     alarm.add('description', vText(alarm_desc))
 
-                    # Format trigger based on minutes
+                    # Set trigger as timedelta (negative for before the event)
                     if minutes == 0:
-                        alarm.add('trigger', 'PT0M')  # At start time
+                        trigger = timedelta(0)  # At start time
                     else:
-                        # Convert minutes to ISO 8601 duration format
-                        hours = minutes // 60
-                        remaining_mins = minutes % 60
+                        trigger = -timedelta(minutes=minutes)  # Negative = before event
 
-                        if hours > 0 and remaining_mins > 0:
-                            trigger = f'-PT{hours}H{remaining_mins}M'
-                        elif hours > 0:
-                            trigger = f'-PT{hours}H'
-                        else:
-                            trigger = f'-PT{minutes}M'
-
-                        alarm.add('trigger', trigger)
+                    alarm.add('trigger', trigger)
 
                     event.add_component(alarm)
                     logger.debug(f"Added {minutes}-minute alarm for session: {session.session_str}")
