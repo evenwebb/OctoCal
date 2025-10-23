@@ -1,0 +1,57 @@
+# Octopus Energy Free Electricity Scraper Configuration
+#
+# For local use: Copy this file to 'config.yaml' and edit it with your settings.
+
+# iCal settings
+ical:
+  output_dir: "./output"
+  filename: "octopus_free_electricity.ics"
+  timezone: "GMT"  # Timezone for the calendar events
+
+  # Calendar alarms (notifications built into the iCal file)
+  # These are triggered by YOUR calendar app (Apple Calendar, Google Calendar, etc.)
+  alarms:
+    enabled: true  # Set to false to disable calendar alarms
+    # List of minutes before the event to trigger alarms
+    # Examples:
+    #   [60, 15, 0] = Alarm 1 hour before, 15 minutes before, and at start time
+    #   [120, 30] = Alarm 2 hours before and 30 minutes before
+    #   [1440] = Alarm 1 day (24 hours) before
+    #   [1440, 15] = Alarm 1 day before and 15 minutes before (good for GitHub Actions)
+    times: [1440, 15]  # Default: 1 day before and 15 min before (GitHub Actions optimized)
+
+# Notification settings
+# NOTE: These are LIVE notifications sent via Apprise (Discord, Telegram, etc.)
+# They are separate from calendar alarms above. You can enable one, both, or neither.
+notifications:
+  enabled: true  # Set to false to disable Apprise notifications
+
+  # How often to check if notifications should be sent (in minutes)
+  # Recommended: 5 minutes (ensures notifications aren't missed)
+  check_interval_minutes: 5
+
+  # Apprise URL(s) for live push notifications
+  # Examples:
+  # - Discord: discord://webhook_id/webhook_token
+  # - Telegram: tgram://bot_token/chat_id
+  # - Email: mailto://user:password@domain.com
+  # - Slack: slack://token_a/token_b/token_c
+  # - Pushover: pover://user@token
+  # - Multiple services: See https://github.com/caronc/apprise
+  apprise_urls:
+    - ""  # Add your Apprise URL(s) here
+
+  # Notification timing (when to send Apprise notifications)
+  upcoming_hours: 1  # Hours before session to send "upcoming" notification
+  notify_start: true  # Send notification when session starts
+  notify_end: true    # Send notification when session ends
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: "./output/octopus_scraper.log"
+
+# Scraper settings
+scraper:
+  url: "https://octopus.energy/free-electricity/"
+  check_interval_minutes: 60  # How often to check for new sessions

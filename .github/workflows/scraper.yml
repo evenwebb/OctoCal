@@ -1,0 +1,57 @@
+name: Scrape Octopus Energy Free Electricity
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    branches: [ main, master ]
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'config.yaml.example'
+
+jobs:
+  scrape-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run scraper
+      run: |
+        python main.py --single-run
+
+    - name: Prepare GitHub Pages content
+      run: |
+        mkdir -p gh-pages-deploy
+        # Copy generated iCal file
+        cp output/octopus_free_electricity.ics gh-pages-deploy/
+        # Copy HTML webpage
+        cp gh-pages-src/index.html gh-pages-deploy/
+        # Add timestamp file
+        echo "Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > gh-pages-deploy/last-updated.txt
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./gh-pages-deploy
+        publish_branch: gh-pages
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Update calendar: ${{ github.event.head_commit.message }}'
