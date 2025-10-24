@@ -72,21 +72,22 @@ class SessionParser:
         """Parse start time from session string."""
         # Extract start time (before the dash)
         start_time_str = time_part.split('-')[0].strip()
-        return self._parse_datetime(start_time_str, date_part)
+        return self._parse_datetime(start_time_str, date_part, time_part)
 
     def _parse_end_time(self, time_part: str, date_part: str) -> Optional[datetime]:
         """Parse end time from session string."""
         # Extract end time (after the dash)
         end_time_str = time_part.split('-')[1].strip()
-        return self._parse_datetime(end_time_str, date_part)
+        return self._parse_datetime(end_time_str, date_part, time_part)
 
-    def _parse_datetime(self, time_str: str, date_part: str) -> Optional[datetime]:
+    def _parse_datetime(self, time_str: str, date_part: str, full_time_range: Optional[str] = None) -> Optional[datetime]:
         """
         Parse a datetime from time and date strings.
 
         Args:
             time_str: Time string (e.g., '12pm' or '2pm')
             date_part: Date string (e.g., 'Saturday 4th October')
+            full_time_range: Full time range string (e.g., '9-10pm') to infer AM/PM
 
         Returns:
             datetime object or None if parsing fails
@@ -97,7 +98,17 @@ class SessionParser:
             return None
 
         hour = int(match.group(1))
-        ampm = match.group(2) or ('pm' if hour == 12 else 'am')
+        ampm = match.group(2)
+
+        # If no AM/PM marker on this time, try to infer from the full time range
+        if not ampm and full_time_range:
+            range_match = re.search(r'(am|pm)', full_time_range.lower())
+            if range_match:
+                ampm = range_match.group(1)
+
+        # Default to AM if still no marker (except for 12 which defaults to PM)
+        if not ampm:
+            ampm = 'pm' if hour == 12 else 'am'
 
         # Convert to 24-hour format
         if ampm == 'pm' and hour != 12:
