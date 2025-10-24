@@ -23,7 +23,7 @@ OctoCal automatically scrapes the Octopus Energy website for free electricity sl
 ## Two Ways to Use
 
 1. **GitHub Actions + Pages (Recommended)**: Fork the repo, enable Actions, get a public calendar URL that auto-updates hourly
-2. **Local/Self-Hosted**: Run on your own machine with full control and custom notifications
+2. **Local/Self-Hosted**: Run on your own machine with full control and custom Apprise notifications
 
 > **Note**: The original OctoCal is live at https://evenwebb.github.io/OctoCal/ if you want to use it without forking!
 
