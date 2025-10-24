@@ -4,7 +4,7 @@
 
 OctoCal automatically scrapes the Octopus Energy website for free electricity slots, creates an iCal calendar file, and sends notifications via Apprise.
 
-🔗 **Live Calendar**: https://evenwebb.github.io/OctoCal/
+🔗 **Live Calendar with Calendar Reminders**: https://evenwebb.github.io/OctoCal/
 
 ## Features
 
@@ -17,13 +17,15 @@ OctoCal automatically scrapes the Octopus Energy website for free electricity sl
 - 🌐 Beautiful GitHub Pages website for easy calendar subscription
 - 🔄 Separate scrape/notification intervals for reliable notifications
 - 💾 Persistent state tracking to avoid duplicate notifications
-- 🎨 Clean, refactored, and optimized code
+- 🎨 Clean, refactored, and optimised code
 - 📜 Open source under GNU GPL v3
 
 ## Two Ways to Use
 
 1. **GitHub Actions + Pages (Recommended)**: Fork the repo, enable Actions, get a public calendar URL that auto-updates hourly
 2. **Local/Self-Hosted**: Run on your own machine with full control and custom notifications
+
+> **Note**: The original OctoCal is live at https://evenwebb.github.io/OctoCal/ if you want to use it without forking!
 
 ## Installation
 
@@ -46,7 +48,7 @@ cp config.yaml.example config.yaml
 
 ## Configuration
 
-Edit `config.yaml` to customize:
+Edit `config.yaml` to customise:
 
 - **Scraper settings**: URL and check interval
 - **iCal settings**: Output directory, filename, timezone
@@ -64,7 +66,21 @@ Apprise supports many notification services. Examples:
 
 See [Apprise documentation](https://github.com/caronc/apprise) for more services.
 
-## GitHub Actions Deployment (Recommended)
+## Local Usage (Required for Apprise notification)
+
+Run the scraper locally:
+
+```bash
+python main.py
+```
+
+The scraper will:
+1. Check for new free electricity sessions
+2. Update the iCal file in the `output` directory
+3. Send notifications based on your configuration
+4. Continue running and checking at the configured interval
+
+## GitHub Actions Deployment (Creates iCal file with reminders, no custom Apprise alerts)
 
 The easiest way to use this is via **GitHub Actions** with automatic deployment to **GitHub Pages**. Your calendar will be publicly accessible and auto-update every hour!
 
@@ -76,7 +92,6 @@ The easiest way to use this is via **GitHub Actions** with automatic deployment 
    - Edit `gh-pages-src/index.html`
    - Replace `evenwebb` with your GitHub username
    - Replace `OctoCal` with your repository name (or keep it as OctoCal!)
-   - Replace `brass-okapi-797` with your Octopus Energy referral code (or remove the referral section)
 
 3. **Enable GitHub Pages**:
    - Go to repo Settings → Pages
@@ -93,13 +108,11 @@ The easiest way to use this is via **GitHub Actions** with automatic deployment 
    - Visit: `https://[your-username].github.io/[your-repo-name]/`
    - Subscribe to the calendar from the webpage!
 
-> **Note**: The original OctoCal is live at https://evenwebb.github.io/OctoCal/ if you just want to use it without forking!
-
 ### How It Works
 
 - **Automatic scraping**: Runs every hour via GitHub Actions cron schedule
 - **No config needed**: Automatically uses `config.yaml.example`
-- **GitHub Pages**: Deploys to `gh-pages` branch with a beautiful webpage
+- **GitHub Pages**: Deploys to `gh-pages` branch with a fancy webpage
 - **One-click subscribe**: Users can add the calendar to Apple Calendar, Google Calendar, etc.
 
 ### Default Settings for GitHub Actions
@@ -109,20 +122,6 @@ When running on GitHub Actions, the script automatically:
 - Runs in single-run mode (scrape once and exit)
 - Sets calendar alarms for 1 day before and 15 minutes before
 - Disables Apprise notifications (use calendar alarms instead)
-
-## Local Usage
-
-Run the scraper locally:
-
-```bash
-python main.py
-```
-
-The scraper will:
-1. Check for new free electricity sessions
-2. Update the iCal file in the `output` directory
-3. Send notifications based on your configuration
-4. Continue running and checking at the configured interval
 
 ### Command Line Options
 
@@ -136,10 +135,6 @@ python main.py --config my-config.yaml
 # Combine options
 python main.py --single-run --config my-config.yaml
 ```
-
-### Running as a Service
-
-For continuous operation, consider running as a systemd service (Linux) or using a process manager like `supervisor`.
 
 ## Project Structure
 
@@ -161,7 +156,3 @@ For continuous operation, consider running as a systemd service (Linux) or using
 - **iCal file**: `output/octopus_free_electricity.ics` - Import into your calendar app
 - **Log file**: `output/octopus_scraper.log` - Application logs
 - **State file**: `output/state.json` - Tracks seen sessions and sent notifications
-
-## License
-
-MIT
