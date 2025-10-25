@@ -1,0 +1,55 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Octopus Energy Free Electricity//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALDESC:Free electricity sessions from Octopus Energy
+X-WR-CALNAME:Octopus Free Electricity
+X-WR-TIMEZONE:GMT
+BEGIN:VEVENT
+SUMMARY:Octopus Free Electricity
+DTSTART:20261024T210000
+DTEND:20261024T220000
+DTSTAMP:20251025T231822Z
+UID:202610242100@octopus.energy
+CATEGORIES:Free Electricity\,Octopus Energy
+DESCRIPTION:Free electricity session: 9-10pm\, Friday 24th October\nDurati
+ on: 1:00:00\nMake sure to use electricity during this period!
+LOCATION:UK
+STATUS:CONFIRMED
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Free electricity session in 24 hours!
+TRIGGER:-P1D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Free electricity session in 15 minutes!
+TRIGGER:-PT15M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Octopus Free Electricity
+DTSTART:20261025T120000
+DTEND:20261025T150000
+DTSTAMP:20251025T231822Z
+UID:202610251200@octopus.energy
+CATEGORIES:Free Electricity\,Octopus Energy
+DESCRIPTION:Free electricity session: 12-3pm\, Saturday 25th October\nDura
+ tion: 3:00:00\nMake sure to use electricity during this period!
+LOCATION:UK
+STATUS:CONFIRMED
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Free electricity session in 24 hours!
+TRIGGER:-P1D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Free electricity session in 15 minutes!
+TRIGGER:-PT15M
+END:VALARM
+END:VEVENT
+END:VCALENDAR
