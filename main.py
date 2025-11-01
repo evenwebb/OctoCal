@@ -308,8 +308,9 @@ class OctopusEnergyMonitor:
             len(filtered_sessions),
             len(upcoming_sessions),
             len(past_sessions)
-        )        success = self.ical_generator.generate(filtered_sessions, ical_output_path)
-
+        )
+        
+        success = self.ical_generator.generate(filtered_sessions, ical_output_path)
         if success:
             logging.info(f"iCal file updated: {ical_output_path}")
         else:
