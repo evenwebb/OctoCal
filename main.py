@@ -266,9 +266,6 @@ class OctopusEnergyMonitor:
 
     def update_ical(self) -> None:
         """Update iCal file with current sessions."""
-        if not self.sessions:
-            logging.info("No sessions to write to iCal")
-            return
 
         # Get cleanup settings
         cleanup_enabled = get_config_value(self.config, 'ical.cleanup.enabled', True)
@@ -292,17 +289,26 @@ class OctopusEnergyMonitor:
         upcoming_sessions = [s for s in filtered_sessions if s.end_time > now]
         past_sessions = [s for s in filtered_sessions if s.end_time <= now]
 
-        if not filtered_sessions:
-            logging.info("No sessions to write to iCal")
-            return
-
         # Get iCal output path
         output_dir = Path(get_config_value(self.config, 'ical.output_dir', './output'))
         filename = get_config_value(self.config, 'ical.filename', 'octopus_free_electricity.ics')
         ical_output_path = output_dir / filename
 
-        logging.info(f"Updating iCal file with {len(filtered_sessions)} session(s) ({len(upcoming_sessions)} upcoming, {len(past_sessions)} recent past)...")
-        success = self.ical_generator.generate(filtered_sessions, ical_output_path)
+        if not filtered_sessions:
+            logging.info("No sessions to write to iCal - generating placeholder file")
+            success = self.ical_generator.generate([], ical_output_path)
+            if success:
+                logging.info(f"iCal placeholder updated: {ical_output_path}")
+            else:
+                logging.error("Failed to generate placeholder iCal file")
+            return
+        
+        logging.info(
+            "Updating iCal file with %s session(s) (%s upcoming, %s recent past)...",
+            len(filtered_sessions),
+            len(upcoming_sessions),
+            len(past_sessions)
+        )        success = self.ical_generator.generate(filtered_sessions, ical_output_path)
 
         if success:
             logging.info(f"iCal file updated: {ical_output_path}")
@@ -460,3 +466,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

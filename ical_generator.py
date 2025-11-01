@@ -38,9 +38,6 @@ class ICalGenerator:
         Returns:
             True if successful, False otherwise
         """
-        if not sessions:
-            logger.warning("No sessions to generate iCal file")
-            return False
 
         # Create calendar
         cal = Calendar()
@@ -50,7 +47,12 @@ class ICalGenerator:
         cal.add('method', 'PUBLISH')
         cal.add('x-wr-calname', vText('Octopus Free Electricity'))
         cal.add('x-wr-timezone', vText(self.timezone))
-        cal.add('x-wr-caldesc', vText('Free electricity sessions from Octopus Energy'))
+        if sessions:
+            description = 'Free electricity sessions from Octopus Energy'
+        else:
+            description = 'No free electricity sessions are currently scheduled.'
+            logger.info("Generating placeholder iCal file with no sessions")
+        cal.add('x-wr-caldesc', vText(description))
 
         # Add events for each session
         for session in sessions:
@@ -143,3 +145,4 @@ class ICalGenerator:
             True if successful, False otherwise
         """
         return self.generate(sessions, output_path)
+    
