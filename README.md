@@ -100,7 +100,7 @@ The easiest way to use this is via **GitHub Actions** with automatic deployment 
    - Save
 
 4. **Run the workflow**:
-   - Go to Actions tab
+   - Go to the Actions tab
    - Click "Scrape Octopus Energy Free Electricity"
    - Click "Run workflow"
 
