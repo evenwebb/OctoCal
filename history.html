@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OctoCal - History & Statistics</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐙</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1000px;
+            width: 100%;
+            padding: 40px;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .octopus-icon {
+            font-size: 64px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #764ba2;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin: 0 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin: 30px 0 20px 0;
+            font-weight: 600;
+        }
+
+        .sessions-list {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .session-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #764ba2;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.2);
+        }
+
+        .session-info {
+            flex: 1;
+        }
+
+        .session-time {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #764ba2;
+            margin-bottom: 5px;
+        }
+
+        .session-date {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .session-duration {
+            background: #764ba2;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .no-sessions {
+            background: #fff9e6;
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+
+        .no-sessions .emoji {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .monthly-breakdown {
+            margin: 30px 0;
+        }
+
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .breakdown-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .breakdown-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .breakdown-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .breakdown-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .chart-container h3 {
+            color: #764ba2;
+            margin: 0 0 20px 0;
+            font-size: 1.4em;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .show-more-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+        }
+
+        .show-more-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+        }
+
+        .show-more-btn:active {
+            transform: translateY(0);
+        }
+
+        .show-more-btn.hidden {
+            display: none;
+        }
+
+        .historic-sessions-list {
+            margin-top: 40px;
+        }
+
+        .historic-sessions-list h2 {
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #764ba2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+            color: #999;
+        }
+
+        .footer a {
+            color: #764ba2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="octopus-icon">🐙⚡</div>
+            <h1>OctoCal History & Statistics</h1>
+            <p class="subtitle">Track your free electricity sessions</p>
+            <p style="margin-top: 15px;">
+                <a href="index.html" class="nav-link">🏠 Back to Home</a>
+            </p>
+        </div>
+
+        <div id="upcoming-section">
+            <h2>⚡ Upcoming Sessions</h2>
+            <div id="upcoming-sessions-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading upcoming sessions...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="historic-section">
+            <h2>📊 Historic Statistics</h2>
+            <div id="historic-stats-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading statistics...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="historic-sessions-section" class="historic-sessions-list">
+            <h2>📜 Historic Sessions</h2>
+            <div id="historic-sessions-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading historic sessions...</p>
+                </div>
+            </div>
+            <button id="show-more-btn" class="show-more-btn hidden">Show More Sessions</button>
+        </div>
+
+        <div class="footer">
+            <p>
+                This is an unofficial community project. Not affiliated with Octopus Energy.<br>
+                Data scraped from <a href="https://octopus.energy/free-electricity/" target="_blank">octopus.energy/free-electricity</a>
+            </p>
+            <p style="margin-top: 15px;">
+                <a href="https://github.com/evenwebb/OctoCal" target="_blank">View Source on GitHub</a> •
+                Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GNU GPL v3</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // OctoCal by evenwebb - https://github.com/evenwebb/OctoCal
+        const username = 'evenwebb';
+        const repoName = 'OctoCal';
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-GB', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function formatDuration(hours) {
+            if (hours < 1) {
+                return `${Math.round(hours * 60)} min`;
+            } else if (hours === 1) {
+                return '1 hour';
+            } else {
+                return `${hours} hours`;
+            }
+        }
+
+        function formatMonth(monthKey) {
+            const [year, month] = monthKey.split('-');
+            const date = new Date(year, parseInt(month) - 1);
+            return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+        }
+
+        function formatMonthShort(monthKey) {
+            const [year, month] = monthKey.split('-');
+            const date = new Date(year, parseInt(month) - 1);
+            return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+        }
+
+        function createSessionsChart(sessions) {
+            // Get last 12 months
+            const now = new Date();
+            const last12Months = [];
+            for (let i = 11; i >= 0; i--) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                last12Months.push(monthKey);
+            }
+
+            // Count sessions per month
+            const sessionsPerMonth = {};
+            sessions.forEach(session => {
+                const startTime = new Date(session.start_time);
+                const monthKey = `${startTime.getFullYear()}-${String(startTime.getMonth() + 1).padStart(2, '0')}`;
+                if (last12Months.includes(monthKey)) {
+                    sessionsPerMonth[monthKey] = (sessionsPerMonth[monthKey] || 0) + 1;
+                }
+            });
+
+            // Prepare data for chart
+            const labels = last12Months.map(key => formatMonthShort(key));
+            const data = last12Months.map(key => sessionsPerMonth[key] || 0);
+
+            // Create chart
+            const ctx = document.getElementById('sessionsChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Number of Sessions',
+                            data: data,
+                            backgroundColor: 'rgba(118, 75, 162, 0.7)',
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 13
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        const count = context.parsed.y;
+                                        return count === 1 ? '1 session' : `${count} sessions`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    precision: 0,
+                                    font: {
+                                        size: 12
+                                    },
+                                    color: '#666'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        size: 11
+                                    },
+                                    color: '#666',
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Load upcoming sessions
+        fetch('upcoming_sessions.json')
+            .then(response => {
+                // Handle 404 or other errors gracefully
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // File doesn't exist yet, show empty state
+                        return { upcoming_sessions: [], last_updated: null };
+                    }
+                    throw new Error(`HTTP ${response.status}: Failed to fetch upcoming sessions`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const container = document.getElementById('upcoming-sessions-container');
+                const sessions = data.upcoming_sessions || [];
+
+                if (sessions.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-sessions">
+                            <div class="emoji">📅</div>
+                            <p><strong>No upcoming sessions</strong></p>
+                            <p>Check back soon for new free electricity periods!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="sessions-list">
+                            ${sessions.map(session => {
+                                const startTime = formatTime(session.start_time);
+                                const endTime = formatTime(session.end_time);
+                                const date = formatDate(session.start_time);
+                                const duration = formatDuration(session.duration_hours);
+                                
+                                return `
+                                    <div class="session-card">
+                                        <div class="session-info">
+                                            <div class="session-time">${startTime} - ${endTime}</div>
+                                            <div class="session-date">${date}</div>
+                                        </div>
+                                        <div class="session-duration">${duration}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading upcoming sessions:', error);
+                const container = document.getElementById('upcoming-sessions-container');
+                container.innerHTML = `
+                    <div class="no-sessions">
+                        <div class="emoji">⚠️</div>
+                        <p>Unable to load upcoming sessions at this time.</p>
+                    </div>
+                `;
+            });
+
+        // Store historic sessions globally for lazy loading
+        let allHistoricSessions = [];
+        let displayedCount = 10;
+        const sessionsPerPage = 10;
+
+        function renderHistoricSessionsList(sessionsToShow) {
+            const container = document.getElementById('historic-sessions-container');
+            const showMoreBtn = document.getElementById('show-more-btn');
+
+            if (sessionsToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="no-sessions">
+                        <div class="emoji">📜</div>
+                        <p><strong>No historic sessions yet</strong></p>
+                        <p>Historic sessions will appear here once they have completed.</p>
+                    </div>
+                `;
+                showMoreBtn.classList.add('hidden');
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="sessions-list">
+                    ${sessionsToShow.map(session => {
+                        const startTime = formatTime(session.start_time);
+                        const endTime = formatTime(session.end_time);
+                        const date = formatDate(session.start_time);
+                        const duration = formatDuration(session.duration_hours || 0);
+                        
+                        return `
+                            <div class="session-card">
+                                <div class="session-info">
+                                    <div class="session-time">${startTime} - ${endTime}</div>
+                                    <div class="session-date">${date}</div>
+                                </div>
+                                <div class="session-duration">${duration}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            // Show/hide "Show More" button
+            if (sessionsToShow.length >= allHistoricSessions.length) {
+                showMoreBtn.classList.add('hidden');
+            } else {
+                showMoreBtn.classList.remove('hidden');
+                showMoreBtn.textContent = `Show More (${allHistoricSessions.length - sessionsToShow.length} remaining)`;
+            }
+        }
+
+        function loadMoreHistoricSessions() {
+            displayedCount += sessionsPerPage;
+            const sessionsToShow = allHistoricSessions.slice(0, displayedCount);
+            renderHistoricSessionsList(sessionsToShow);
+        }
+
+        // Load historic statistics
+        fetch('history.json')
+            .then(response => {
+                // Handle 404 or other errors gracefully
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // File doesn't exist yet, show empty state
+                        return { sessions: [], last_updated: null };
+                    }
+                    throw new Error(`HTTP ${response.status}: Failed to fetch history`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const statsContainer = document.getElementById('historic-stats-container');
+                const sessionsContainer = document.getElementById('historic-sessions-container');
+                const sessions = data.sessions || [];
+                
+                // Filter historic sessions (end_time <= now)
+                const now = new Date();
+                const historicSessions = sessions.filter(s => {
+                    const endTime = new Date(s.end_time);
+                    return endTime <= now;
+                });
+
+                // Sort by start_time descending (most recent first)
+                historicSessions.sort((a, b) => {
+                    return new Date(b.start_time) - new Date(a.start_time);
+                });
+
+                // Store globally for lazy loading
+                allHistoricSessions = historicSessions;
+
+                if (historicSessions.length === 0) {
+                    statsContainer.innerHTML = `
+                        <div class="no-sessions">
+                            <div class="emoji">📊</div>
+                            <p><strong>No historic sessions yet</strong></p>
+                            <p>Statistics will appear here once sessions have completed.</p>
+                        </div>
+                    `;
+                    renderHistoricSessionsList([]);
+                    return;
+                }
+
+                // Calculate statistics
+                const totalSessions = historicSessions.length;
+                const totalHours = historicSessions.reduce((sum, s) => sum + (s.duration_hours || 0), 0);
+                const avgDuration = totalHours / totalSessions;
+                
+                const longestSession = historicSessions.reduce((max, s) => 
+                    (s.duration_hours || 0) > (max.duration_hours || 0) ? s : max, historicSessions[0]);
+                const shortestSession = historicSessions.reduce((min, s) => 
+                    (s.duration_hours || 0) < (min.duration_hours || 0) ? s : min, historicSessions[0]);
+
+                // Monthly breakdown
+                const sessionsPerMonth = {};
+                const hoursPerMonth = {};
+                
+                historicSessions.forEach(session => {
+                    const startTime = new Date(session.start_time);
+                    const monthKey = `${startTime.getFullYear()}-${String(startTime.getMonth() + 1).padStart(2, '0')}`;
+                    sessionsPerMonth[monthKey] = (sessionsPerMonth[monthKey] || 0) + 1;
+                    hoursPerMonth[monthKey] = (hoursPerMonth[monthKey] || 0) + (session.duration_hours || 0);
+                });
+
+                const sortedMonths = Object.keys(sessionsPerMonth).sort();
+
+                // Calculate additional insights
+                // Best month (most sessions)
+                let bestMonthSessions = null;
+                let bestMonthSessionsCount = 0;
+                for (const [monthKey, count] of Object.entries(sessionsPerMonth)) {
+                    if (count > bestMonthSessionsCount) {
+                        bestMonthSessionsCount = count;
+                        bestMonthSessions = monthKey;
+                    }
+                }
+
+                // Best month (most hours)
+                let bestMonthHours = null;
+                let bestMonthHoursValue = 0;
+                for (const [monthKey, hours] of Object.entries(hoursPerMonth)) {
+                    if (hours > bestMonthHoursValue) {
+                        bestMonthHoursValue = hours;
+                        bestMonthHours = monthKey;
+                    }
+                }
+
+                // Day of week analysis
+                const sessionsByDay = {};
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                
+                historicSessions.forEach(session => {
+                    const startTime = new Date(session.start_time);
+                    const dayName = dayNames[startTime.getDay()];
+                    sessionsByDay[dayName] = (sessionsByDay[dayName] || 0) + 1;
+                });
+
+                // Most common day of week
+                let mostCommonDay = null;
+                let mostCommonDayCount = 0;
+                for (const [day, count] of Object.entries(sessionsByDay)) {
+                    if (count > mostCommonDayCount) {
+                        mostCommonDayCount = count;
+                        mostCommonDay = day;
+                    }
+                }
+
+                // Time of day analysis (hour of start time)
+                const sessionsByHour = {};
+                historicSessions.forEach(session => {
+                    const startTime = new Date(session.start_time);
+                    const hour = startTime.getHours();
+                    sessionsByHour[hour] = (sessionsByHour[hour] || 0) + 1;
+                });
+
+                // Most common hour
+                let mostCommonHour = null;
+                let mostCommonHourCount = 0;
+                for (const [hour, count] of Object.entries(sessionsByHour)) {
+                    if (count > mostCommonHourCount) {
+                        mostCommonHourCount = count;
+                        mostCommonHour = parseInt(hour);
+                    }
+                }
+
+                // Current year stats
+                const currentYear = new Date().getFullYear();
+                const thisYearSessions = historicSessions.filter(s => {
+                    const startTime = new Date(s.start_time);
+                    return startTime.getFullYear() === currentYear;
+                });
+                const thisYearHours = thisYearSessions.reduce((sum, s) => sum + (s.duration_hours || 0), 0);
+
+                // Average sessions per month
+                const uniqueMonths = Object.keys(sessionsPerMonth).length;
+                const avgSessionsPerMonth = uniqueMonths > 0 ? (totalSessions / uniqueMonths).toFixed(1) : 0;
+
+                statsContainer.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="value">${totalSessions}</div>
+                            <div class="label">Total Sessions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${totalHours.toFixed(1)}</div>
+                            <div class="label">Total Hours</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${avgDuration.toFixed(2)}</div>
+                            <div class="label">Avg Duration (hours)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${formatDuration(longestSession.duration_hours || 0)}</div>
+                            <div class="label">Longest Session</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${formatDuration(shortestSession.duration_hours || 0)}</div>
+                            <div class="label">Shortest Session</div>
+                        </div>
+                        ${thisYearSessions.length > 0 ? `
+                        <div class="stat-card">
+                            <div class="value">${thisYearSessions.length}</div>
+                            <div class="label">Sessions This Year</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${thisYearHours.toFixed(1)}</div>
+                            <div class="label">Hours This Year</div>
+                        </div>
+                        ` : ''}
+                        ${bestMonthSessions ? `
+                        <div class="stat-card">
+                            <div class="value">${formatMonthShort(bestMonthSessions)}</div>
+                            <div class="label">Best Month (${bestMonthSessionsCount} sessions)</div>
+                        </div>
+                        ` : ''}
+                        ${bestMonthHours && bestMonthHours !== bestMonthSessions ? `
+                        <div class="stat-card">
+                            <div class="value">${formatMonthShort(bestMonthHours)}</div>
+                            <div class="label">Most Hours (${bestMonthHoursValue.toFixed(1)}h)</div>
+                        </div>
+                        ` : ''}
+                        ${mostCommonDay ? `
+                        <div class="stat-card">
+                            <div class="value">${mostCommonDay}</div>
+                            <div class="label">Most Common Day (${mostCommonDayCount}x)</div>
+                        </div>
+                        ` : ''}
+                        ${mostCommonHour !== null ? `
+                        <div class="stat-card">
+                            <div class="value">${mostCommonHour}:00</div>
+                            <div class="label">Most Common Start Time</div>
+                        </div>
+                        ` : ''}
+                        ${uniqueMonths > 0 ? `
+                        <div class="stat-card">
+                            <div class="value">${avgSessionsPerMonth}</div>
+                            <div class="label">Avg Sessions/Month</div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="insights-section" style="margin-top: 30px;">
+                        <h3 style="color: #764ba2; margin: 30px 0 15px 0; font-size: 1.4em;">📈 Additional Insights</h3>
+                        <div style="background: #f8f9fa; border-radius: 12px; padding: 20px;">
+                            ${bestMonthSessions ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Best Month:</strong> ${formatMonth(bestMonthSessions)} had the most sessions (${bestMonthSessionsCount})${bestMonthHours && bestMonthHours !== bestMonthSessions ? `, while ${formatMonth(bestMonthHours)} had the most hours (${bestMonthHoursValue.toFixed(1)} hours)` : ''}.
+                            </p>
+                            ` : ''}
+                            ${mostCommonDay ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Day Pattern:</strong> ${mostCommonDay} is the most common day for free sessions (${mostCommonDayCount} session${mostCommonDayCount !== 1 ? 's' : ''}).
+                            </p>
+                            ` : ''}
+                            ${mostCommonHour !== null ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Time Pattern:</strong> Sessions most commonly start at ${mostCommonHour}:00 (${mostCommonHourCount} session${mostCommonHourCount !== 1 ? 's' : ''}).
+                            </p>
+                            ` : ''}
+                            ${uniqueMonths > 0 ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Frequency:</strong> Average of ${avgSessionsPerMonth} session${parseFloat(avgSessionsPerMonth) !== 1 ? 's' : ''} per month across ${uniqueMonths} month${uniqueMonths !== 1 ? 's' : ''}.
+                            </p>
+                            ` : ''}
+                            ${thisYearSessions.length > 0 ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>This Year:</strong> ${thisYearSessions.length} session${thisYearSessions.length !== 1 ? 's' : ''} totaling ${thisYearHours.toFixed(1)} hours of free electricity in ${currentYear}.
+                            </p>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="monthly-breakdown">
+                        <h3 style="color: #764ba2; margin: 30px 0 15px 0; font-size: 1.4em;">Monthly Breakdown</h3>
+                        <table class="breakdown-table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Sessions</th>
+                                    <th>Total Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedMonths.map(monthKey => `
+                                    <tr>
+                                        <td><strong>${formatMonth(monthKey)}</strong></td>
+                                        <td>${sessionsPerMonth[monthKey]}</td>
+                                        <td>${hoursPerMonth[monthKey].toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>📊 Sessions Per Month (Last 12 Months)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="sessionsChart"></canvas>
+                        </div>
+                    </div>
+                `;
+
+                // Create bar chart for last 12 months (if Chart.js is loaded)
+                if (typeof Chart !== 'undefined') {
+                    createSessionsChart(historicSessions);
+                } else {
+                    console.warn('Chart.js not loaded, skipping chart creation');
+                }
+
+                // Render initial historic sessions list (last 10)
+                displayedCount = Math.min(10, historicSessions.length);
+                const initialSessions = historicSessions.slice(0, displayedCount);
+                renderHistoricSessionsList(initialSessions);
+            })
+            .catch(error => {
+                console.error('Error loading history:', error);
+                const statsContainer = document.getElementById('historic-stats-container');
+                const sessionsContainer = document.getElementById('historic-sessions-container');
+                statsContainer.innerHTML = `
+                    <div class="no-sessions">
+                        <div class="emoji">⚠️</div>
+                        <p>Unable to load statistics at this time.</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">History data may not be available yet.</p>
+                    </div>
+                `;
+                sessionsContainer.innerHTML = `
+                    <div class="no-sessions">
+                        <div class="emoji">⚠️</div>
+                        <p>Unable to load historic sessions at this time.</p>
+                    </div>
+                `;
+            });
+
+        // Add event listener for "Show More" button
+        // Button exists in HTML, so we can attach listener directly
+        const showMoreBtn = document.getElementById('show-more-btn');
+        if (showMoreBtn) {
+            showMoreBtn.addEventListener('click', loadMoreHistoricSessions);
+        }
+    </script>
+</body>
+</html>

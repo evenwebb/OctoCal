@@ -1,0 +1,9 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Octopus Energy Free Electricity//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALDESC:No free electricity sessions are currently scheduled.
+X-WR-CALNAME:Octopus Free Electricity
+X-WR-TIMEZONE:GMT
+END:VCALENDAR
