@@ -44,9 +44,17 @@ jobs:
         # Copy HTML webpages
         cp gh-pages-src/index.html gh-pages-deploy/
         cp gh-pages-src/history.html gh-pages-deploy/
-        # Copy JSON data files (if they exist)
-        [ -f output/history.json ] && cp output/history.json gh-pages-deploy/ || echo "history.json not found, skipping"
-        [ -f output/upcoming_sessions.json ] && cp output/upcoming_sessions.json gh-pages-deploy/ || echo "upcoming_sessions.json not found, skipping"
+        # Copy JSON data files (create empty ones if they don't exist)
+        if [ -f output/history.json ]; then
+          cp output/history.json gh-pages-deploy/
+        else
+          echo '{"sessions": [], "last_updated": null}' > gh-pages-deploy/history.json
+        fi
+        if [ -f output/upcoming_sessions.json ]; then
+          cp output/upcoming_sessions.json gh-pages-deploy/
+        else
+          echo '{"upcoming_sessions": [], "last_updated": null}' > gh-pages-deploy/upcoming_sessions.json
+        fi
         # Add timestamp file
         echo "Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > gh-pages-deploy/last-updated.txt
 

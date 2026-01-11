@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OctoCal - Octopus Energy Free Electricity Calendar</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐙</text></svg>">
     <style>
         * {
             margin: 0;
@@ -115,44 +116,44 @@
         .opt-in-reminder {
             background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
             border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 30px 0;
-            text-align: center;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         .opt-in-reminder .icon {
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-
-        .opt-in-reminder h3 {
-            color: #856404;
-            margin-bottom: 10px;
             font-size: 1.3em;
+            flex-shrink: 0;
         }
 
-        .opt-in-reminder p {
+        .opt-in-reminder .text {
+            flex: 1;
             color: #856404;
-            line-height: 1.6;
-            margin-bottom: 15px;
+            font-size: 0.95em;
+            line-height: 1.4;
         }
 
         .opt-in-link {
             display: inline-block;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
             text-decoration: none;
             font-weight: 600;
+            font-size: 0.9em;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+            white-space: nowrap;
         }
 
         .opt-in-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
             text-decoration: none;
             color: white;
         }
@@ -395,21 +396,12 @@
 
         <div class="opt-in-reminder">
             <div class="icon">⚠️</div>
-            <h3>Important: Opt-In Required</h3>
-            <p>You must opt-in to receive free electricity sessions from Octopus Energy. Make sure you're signed up to participate!</p>
-            <a href="https://octopus.typeform.com/to/xUHlI2xy" target="_blank" class="opt-in-link">
-                Opt-In to Free Sessions →
-            </a>
-        </div>
-
-        <div class="upcoming-sessions">
-            <h2>⚡ Upcoming Sessions</h2>
-            <div id="upcoming-sessions-container">
-                <div class="no-sessions">
-                    <div class="emoji">⏳</div>
-                    <p>Loading upcoming sessions...</p>
-                </div>
+            <div class="text">
+                <strong>Opt-in required:</strong> You must sign up to receive free electricity sessions.
             </div>
+            <a href="https://octopus.typeform.com/to/xUHlI2xy" target="_blank" class="opt-in-link">
+                Opt-In →
+            </a>
         </div>
 
         <h2>📅 Add to Your Calendar</h2>
@@ -444,6 +436,16 @@
             </div>
             <div class="instruction-step">
                 <strong>Outlook:</strong> Calendar → Add Calendar → Subscribe from web → Paste URL
+            </div>
+        </div>
+
+        <div class="upcoming-sessions">
+            <h2>⚡ Upcoming Sessions</h2>
+            <div id="upcoming-sessions-container">
+                <div class="no-sessions">
+                    <div class="emoji">⏳</div>
+                    <p>Loading upcoming sessions...</p>
+                </div>
             </div>
         </div>
 
@@ -546,8 +548,13 @@
 
         fetch('upcoming_sessions.json')
             .then(response => {
+                // Handle 404 or other errors gracefully
                 if (!response.ok) {
-                    throw new Error('Failed to fetch upcoming sessions');
+                    if (response.status === 404) {
+                        // File doesn't exist yet, show empty state
+                        return { upcoming_sessions: [], last_updated: null };
+                    }
+                    throw new Error(`HTTP ${response.status}: Failed to fetch upcoming sessions`);
                 }
                 return response.json();
             })
@@ -591,8 +598,9 @@
                 const container = document.getElementById('upcoming-sessions-container');
                 container.innerHTML = `
                     <div class="no-sessions">
-                        <div class="emoji">⚠️</div>
-                        <p>Unable to load upcoming sessions at this time.</p>
+                        <div class="emoji">📅</div>
+                        <p><strong>No upcoming sessions</strong></p>
+                        <p>Check back soon for new free electricity periods!</p>
                     </div>
                 `;
             });

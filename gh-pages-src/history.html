@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OctoCal - History & Statistics</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐙</text></svg>">
     <style>
         * {
             margin: 0;
@@ -391,8 +392,13 @@
         // Load upcoming sessions
         fetch('upcoming_sessions.json')
             .then(response => {
+                // Handle 404 or other errors gracefully
                 if (!response.ok) {
-                    throw new Error('Failed to fetch upcoming sessions');
+                    if (response.status === 404) {
+                        // File doesn't exist yet, show empty state
+                        return { upcoming_sessions: [], last_updated: null };
+                    }
+                    throw new Error(`HTTP ${response.status}: Failed to fetch upcoming sessions`);
                 }
                 return response.json();
             })
@@ -502,8 +508,13 @@
         // Load historic statistics
         fetch('history.json')
             .then(response => {
+                // Handle 404 or other errors gracefully
                 if (!response.ok) {
-                    throw new Error('Failed to fetch history');
+                    if (response.status === 404) {
+                        // File doesn't exist yet, show empty state
+                        return { sessions: [], last_updated: null };
+                    }
+                    throw new Error(`HTTP ${response.status}: Failed to fetch history`);
                 }
                 return response.json();
             })
