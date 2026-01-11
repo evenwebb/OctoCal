@@ -32,12 +32,15 @@ jobs:
         pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Download existing history (if any)
+    - name: Prepare history data
       run: |
         mkdir -p output
-        # Try to download history.json from gh-pages branch
-        git fetch origin gh-pages:gh-pages 2>/dev/null || true
-        if git show gh-pages:history.json > output/history.json 2>/dev/null; then
+        # Priority 1: Use committed seed data if available
+        if [ -f gh-pages-data/history.json ]; then
+          cp gh-pages-data/history.json output/history.json
+          echo "Using seed history.json from gh-pages-data/"
+        # Priority 2: Download existing from gh-pages branch
+        elif git fetch origin gh-pages:gh-pages 2>/dev/null && git show gh-pages:history.json > output/history.json 2>/dev/null; then
           echo "Downloaded existing history.json from gh-pages branch"
         else
           echo "No existing history.json found, will create new one"
