@@ -658,8 +658,14 @@
                 // Filter historic sessions (end_time <= now)
                 const now = new Date();
                 const historicSessions = sessions.filter(s => {
-                    const endTime = new Date(s.end_time);
-                    return endTime <= now;
+                    if (!s.end_time) return false;
+                    try {
+                        const endTime = new Date(s.end_time);
+                        return endTime <= now;
+                    } catch (e) {
+                        console.error('Error parsing date:', s.end_time, e);
+                        return false;
+                    }
                 });
 
                 // Sort by start_time descending (most recent first)

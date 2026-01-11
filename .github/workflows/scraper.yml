@@ -32,6 +32,17 @@ jobs:
         pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Download existing history (if any)
+      run: |
+        mkdir -p output
+        # Try to download history.json from gh-pages branch
+        git fetch origin gh-pages:gh-pages 2>/dev/null || true
+        if git show gh-pages:history.json > output/history.json 2>/dev/null; then
+          echo "Downloaded existing history.json from gh-pages branch"
+        else
+          echo "No existing history.json found, will create new one"
+        fi
+
     - name: Run scraper
       run: |
         python3 main.py --single-run
@@ -64,7 +75,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./gh-pages-deploy
         publish_branch: gh-pages
-        force_orphan: true
+        force_orphan: false
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
         commit_message: 'Update calendar: ${{ github.event.head_commit.message }}'
