@@ -644,13 +644,35 @@
                 if (!response.ok) {
                     if (response.status === 404) {
                         // File doesn't exist yet, show empty state
-                        return { sessions: [], last_updated: null };
+                        console.warn('history.json not found (404) - this is normal on first deployment');
+                        const statsContainer = document.getElementById('historic-stats-container');
+                        const sessionsContainer = document.getElementById('historic-sessions-container');
+                        statsContainer.innerHTML = `
+                            <div class="no-sessions">
+                                <div class="emoji">📊</div>
+                                <p><strong>No historic sessions yet</strong></p>
+                                <p>History will appear here once the scraper runs and discovers sessions.</p>
+                                <p style="margin-top: 10px; font-size: 0.9em; color: #999;">The history file will be created automatically on the next workflow run.</p>
+                            </div>
+                        `;
+                        sessionsContainer.innerHTML = `
+                            <div class="no-sessions">
+                                <div class="emoji">📜</div>
+                                <p><strong>No historic sessions yet</strong></p>
+                                <p>Historic sessions will appear here once they have completed.</p>
+                            </div>
+                        `;
+                        return null; // Return null to stop processing
                     }
                     throw new Error(`HTTP ${response.status}: Failed to fetch history`);
                 }
                 return response.json();
             })
             .then(data => {
+                // Handle case where we returned null (404)
+                if (data === null) {
+                    return;
+                }
                 const statsContainer = document.getElementById('historic-stats-container');
                 const sessionsContainer = document.getElementById('historic-sessions-container');
                 const sessions = data.sessions || [];
