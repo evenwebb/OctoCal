@@ -11,6 +11,7 @@ on:
       - '**.py'
       - 'requirements.txt'
       - 'config.yaml.example'
+      - 'gh-pages-src/**'
 
 jobs:
   scrape-and-deploy:
@@ -40,8 +41,12 @@ jobs:
         mkdir -p gh-pages-deploy
         # Copy generated iCal file
         cp output/octopus_free_electricity.ics gh-pages-deploy/
-        # Copy HTML webpage
+        # Copy HTML webpages
         cp gh-pages-src/index.html gh-pages-deploy/
+        cp gh-pages-src/history.html gh-pages-deploy/
+        # Copy JSON data files (if they exist)
+        [ -f output/history.json ] && cp output/history.json gh-pages-deploy/ || echo "history.json not found, skipping"
+        [ -f output/upcoming_sessions.json ] && cp output/upcoming_sessions.json gh-pages-deploy/ || echo "upcoming_sessions.json not found, skipping"
         # Add timestamp file
         echo "Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > gh-pages-deploy/last-updated.txt
 

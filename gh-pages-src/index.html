@@ -112,6 +112,51 @@
             color: #0d47a1;
         }
 
+        .opt-in-reminder {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .opt-in-reminder .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .opt-in-reminder h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .opt-in-reminder p {
+            color: #856404;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .opt-in-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+        }
+
+        .opt-in-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+
         .calendar-buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -232,6 +277,91 @@
             text-decoration: underline;
         }
 
+        .nav-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: #764ba2;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: #f8f9fa;
+            text-decoration: none;
+        }
+
+        .upcoming-sessions {
+            margin: 30px 0;
+        }
+
+        .upcoming-sessions h2 {
+            margin-bottom: 20px;
+        }
+
+        .sessions-list {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .session-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #764ba2;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.2);
+        }
+
+        .session-info {
+            flex: 1;
+        }
+
+        .session-time {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #764ba2;
+            margin-bottom: 5px;
+        }
+
+        .session-date {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .session-duration {
+            background: #764ba2;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .no-sessions {
+            background: #fff9e6;
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+
+        .no-sessions .emoji {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 25px;
@@ -252,12 +382,34 @@
             <h1>OctoCal</h1>
             <p class="subtitle">Never miss an Octopus Energy free electricity session!</p>
             <p class="updated" id="last-updated">Updates automatically every hour</p>
+            <p style="margin-top: 15px;">
+                <a href="history.html" class="nav-link">📊 View History & Stats</a>
+            </p>
         </div>
 
         <div class="description">
             <p><strong>What is this?</strong></p>
             <p>Octopus Energy occasionally offers <strong>free electricity sessions</strong> as part of their Power-Up events. This calendar automatically scrapes their website and keeps you updated with the latest free electricity slots.</p>
             <p><strong>Subscribe once</strong> and your calendar will automatically update whenever new sessions are announced!</p>
+        </div>
+
+        <div class="opt-in-reminder">
+            <div class="icon">⚠️</div>
+            <h3>Important: Opt-In Required</h3>
+            <p>You must opt-in to receive free electricity sessions from Octopus Energy. Make sure you're signed up to participate!</p>
+            <a href="https://octopus.typeform.com/to/xUHlI2xy" target="_blank" class="opt-in-link">
+                Opt-In to Free Sessions →
+            </a>
+        </div>
+
+        <div class="upcoming-sessions">
+            <h2>⚡ Upcoming Sessions</h2>
+            <div id="upcoming-sessions-container">
+                <div class="no-sessions">
+                    <div class="emoji">⏳</div>
+                    <p>Loading upcoming sessions...</p>
+                </div>
+            </div>
         </div>
 
         <h2>📅 Add to Your Calendar</h2>
@@ -360,6 +512,89 @@
             })
             .catch(() => {
                 document.getElementById('last-updated').textContent = 'Updates automatically every hour';
+            });
+
+        // Fetch and display upcoming sessions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-GB', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function formatDuration(hours) {
+            if (hours < 1) {
+                return `${Math.round(hours * 60)} min`;
+            } else if (hours === 1) {
+                return '1 hour';
+            } else {
+                return `${hours} hours`;
+            }
+        }
+
+        fetch('upcoming_sessions.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch upcoming sessions');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const container = document.getElementById('upcoming-sessions-container');
+                const sessions = data.upcoming_sessions || [];
+
+                if (sessions.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-sessions">
+                            <div class="emoji">📅</div>
+                            <p><strong>No upcoming sessions</strong></p>
+                            <p>Check back soon for new free electricity periods!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="sessions-list">
+                            ${sessions.map(session => {
+                                const startTime = formatTime(session.start_time);
+                                const endTime = formatTime(session.end_time);
+                                const date = formatDate(session.start_time);
+                                const duration = formatDuration(session.duration_hours);
+                                
+                                return `
+                                    <div class="session-card">
+                                        <div class="session-info">
+                                            <div class="session-time">${startTime} - ${endTime}</div>
+                                            <div class="session-date">${date}</div>
+                                        </div>
+                                        <div class="session-duration">${duration}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading upcoming sessions:', error);
+                const container = document.getElementById('upcoming-sessions-container');
+                container.innerHTML = `
+                    <div class="no-sessions">
+                        <div class="emoji">⚠️</div>
+                        <p>Unable to load upcoming sessions at this time.</p>
+                    </div>
+                `;
             });
     </script>
 </body>

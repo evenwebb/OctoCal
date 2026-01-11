@@ -13,6 +13,7 @@ from octopus_scraper import OctopusScraper
 from session_parser import SessionParser, Session
 from ical_generator import ICalGenerator
 from notifier import Notifier
+from history_logger import HistoryLogger
 
 
 def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
@@ -197,6 +198,10 @@ class OctopusEnergyMonitor:
         state_file = output_dir / 'state.json'
         self.tracker = SessionTracker(state_file)
 
+        # Initialize history logger
+        history_file = output_dir / 'history.json'
+        self.history_logger = HistoryLogger(history_file)
+
         # Store parsed sessions
         self.sessions: List[Session] = []
 
@@ -251,6 +256,9 @@ class OctopusEnergyMonitor:
                     new_sessions_found = True
                     logging.info(f"New session: {session_str}")
 
+                    # Log to history
+                    self.history_logger.add_session(session)
+
                     # Notify about new session (only if it's a "next" session type)
                     if session_type == 'next' and self.notifier.enabled:
                         self.notifier.notify_new_session(session)
@@ -259,8 +267,11 @@ class OctopusEnergyMonitor:
             else:
                 # Session already known, add to list if not already there
                 session = self.parser.parse(session_str)
-                if session and not any(s.session_str == session_str for s in self.sessions):
-                    self.sessions.append(session)
+                if session:
+                    # Log to history (will skip if already exists)
+                    self.history_logger.add_session(session)
+                    if not any(s.session_str == session_str for s in self.sessions):
+                        self.sessions.append(session)
 
         return new_sessions_found
 
@@ -315,6 +326,11 @@ class OctopusEnergyMonitor:
             logging.info(f"iCal file updated: {ical_output_path}")
         else:
             logging.error("Failed to update iCal file")
+
+        # Export upcoming sessions for web display
+        output_dir = Path(get_config_value(self.config, 'ical.output_dir', './output'))
+        upcoming_sessions_file = output_dir / 'upcoming_sessions.json'
+        self.history_logger.export_upcoming_sessions(upcoming_sessions_file)
 
     def check_notifications(self) -> None:
         """Check if any notifications should be sent."""
