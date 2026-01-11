@@ -34,7 +34,7 @@ jobs:
 
     - name: Run scraper
       run: |
-        python main.py --single-run
+        python3 main.py --single-run
 
     - name: Prepare GitHub Pages content
       run: |

@@ -17,6 +17,7 @@ class Session:
     session_str: str
     start_time: datetime
     end_time: datetime
+    code: Optional[str] = None  # Optional unique identifier from Octopus API
 
     @property
     def duration(self) -> timedelta:

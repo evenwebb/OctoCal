@@ -281,17 +281,22 @@
         .nav-link {
             display: inline-block;
             margin: 0 10px;
-            color: #764ba2;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             text-decoration: none;
             font-weight: 600;
             padding: 8px 16px;
-            border-radius: 8px;
+            border-radius: 6px;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+            white-space: nowrap;
         }
 
         .nav-link:hover {
-            background: #f8f9fa;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
             text-decoration: none;
+            color: white;
         }
 
         .upcoming-sessions {
@@ -384,7 +389,7 @@
             <p class="subtitle">Never miss an Octopus Energy free electricity session!</p>
             <p class="updated" id="last-updated">Updates automatically every hour</p>
             <p style="margin-top: 15px;">
-                <a href="history.html" class="nav-link">📊 View History & Stats</a>
+                <a href="history.html" class="nav-link">📊 View Session History & Stats</a>
             </p>
         </div>
 

@@ -61,6 +61,9 @@ class HistoryLogger:
         Returns:
             Unique session identifier string
         """
+        # Use code if available (more reliable), otherwise fall back to session_str + start_time
+        if session.code:
+            return session.code
         return f"{session.session_str}|{session.start_time.isoformat()}"
 
     def _session_exists(self, session: Session) -> bool:
@@ -81,6 +84,10 @@ class HistoryLogger:
 
     def _get_session_id_from_dict(self, session_dict: Dict[str, Any]) -> str:
         """Get session ID from dictionary representation."""
+        # Use code if available (more reliable), otherwise fall back to session_str + start_time
+        code = session_dict.get("code")
+        if code:
+            return code
         session_str = session_dict.get("session_str", "")
         start_time = session_dict.get("start_time", "")
         return f"{session_str}|{start_time}"
@@ -106,6 +113,10 @@ class HistoryLogger:
             "duration_hours": session.duration.total_seconds() / 3600,
             "discovered_at": datetime.now().isoformat()
         }
+        
+        # Add code if available (from API)
+        if session.code:
+            session_dict["code"] = session.code
 
         self.history["sessions"].append(session_dict)
         self._save_history()
