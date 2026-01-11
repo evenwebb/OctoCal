@@ -65,17 +65,22 @@
         .nav-link {
             display: inline-block;
             margin: 0 10px;
-            color: #764ba2;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             text-decoration: none;
             font-weight: 600;
             padding: 8px 16px;
-            border-radius: 8px;
+            border-radius: 6px;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+            white-space: nowrap;
         }
 
         .nav-link:hover {
-            background: #f8f9fa;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
             text-decoration: none;
+            color: white;
         }
 
         h2 {
@@ -700,6 +705,77 @@
 
                 const sortedMonths = Object.keys(sessionsPerMonth).sort();
 
+                // Calculate additional insights
+                // Best month (most sessions)
+                let bestMonthSessions = null;
+                let bestMonthSessionsCount = 0;
+                for (const [monthKey, count] of Object.entries(sessionsPerMonth)) {
+                    if (count > bestMonthSessionsCount) {
+                        bestMonthSessionsCount = count;
+                        bestMonthSessions = monthKey;
+                    }
+                }
+
+                // Best month (most hours)
+                let bestMonthHours = null;
+                let bestMonthHoursValue = 0;
+                for (const [monthKey, hours] of Object.entries(hoursPerMonth)) {
+                    if (hours > bestMonthHoursValue) {
+                        bestMonthHoursValue = hours;
+                        bestMonthHours = monthKey;
+                    }
+                }
+
+                // Day of week analysis
+                const sessionsByDay = {};
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                
+                historicSessions.forEach(session => {
+                    const startTime = new Date(session.start_time);
+                    const dayName = dayNames[startTime.getDay()];
+                    sessionsByDay[dayName] = (sessionsByDay[dayName] || 0) + 1;
+                });
+
+                // Most common day of week
+                let mostCommonDay = null;
+                let mostCommonDayCount = 0;
+                for (const [day, count] of Object.entries(sessionsByDay)) {
+                    if (count > mostCommonDayCount) {
+                        mostCommonDayCount = count;
+                        mostCommonDay = day;
+                    }
+                }
+
+                // Time of day analysis (hour of start time)
+                const sessionsByHour = {};
+                historicSessions.forEach(session => {
+                    const startTime = new Date(session.start_time);
+                    const hour = startTime.getHours();
+                    sessionsByHour[hour] = (sessionsByHour[hour] || 0) + 1;
+                });
+
+                // Most common hour
+                let mostCommonHour = null;
+                let mostCommonHourCount = 0;
+                for (const [hour, count] of Object.entries(sessionsByHour)) {
+                    if (count > mostCommonHourCount) {
+                        mostCommonHourCount = count;
+                        mostCommonHour = parseInt(hour);
+                    }
+                }
+
+                // Current year stats
+                const currentYear = new Date().getFullYear();
+                const thisYearSessions = historicSessions.filter(s => {
+                    const startTime = new Date(s.start_time);
+                    return startTime.getFullYear() === currentYear;
+                });
+                const thisYearHours = thisYearSessions.reduce((sum, s) => sum + (s.duration_hours || 0), 0);
+
+                // Average sessions per month
+                const uniqueMonths = Object.keys(sessionsPerMonth).length;
+                const avgSessionsPerMonth = uniqueMonths > 0 ? (totalSessions / uniqueMonths).toFixed(1) : 0;
+
                 statsContainer.innerHTML = `
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -721,6 +797,77 @@
                         <div class="stat-card">
                             <div class="value">${formatDuration(shortestSession.duration_hours || 0)}</div>
                             <div class="label">Shortest Session</div>
+                        </div>
+                        ${thisYearSessions.length > 0 ? `
+                        <div class="stat-card">
+                            <div class="value">${thisYearSessions.length}</div>
+                            <div class="label">Sessions This Year</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${thisYearHours.toFixed(1)}</div>
+                            <div class="label">Hours This Year</div>
+                        </div>
+                        ` : ''}
+                        ${bestMonthSessions ? `
+                        <div class="stat-card">
+                            <div class="value">${formatMonthShort(bestMonthSessions)}</div>
+                            <div class="label">Best Month (${bestMonthSessionsCount} sessions)</div>
+                        </div>
+                        ` : ''}
+                        ${bestMonthHours && bestMonthHours !== bestMonthSessions ? `
+                        <div class="stat-card">
+                            <div class="value">${formatMonthShort(bestMonthHours)}</div>
+                            <div class="label">Most Hours (${bestMonthHoursValue.toFixed(1)}h)</div>
+                        </div>
+                        ` : ''}
+                        ${mostCommonDay ? `
+                        <div class="stat-card">
+                            <div class="value">${mostCommonDay}</div>
+                            <div class="label">Most Common Day (${mostCommonDayCount}x)</div>
+                        </div>
+                        ` : ''}
+                        ${mostCommonHour !== null ? `
+                        <div class="stat-card">
+                            <div class="value">${mostCommonHour}:00</div>
+                            <div class="label">Most Common Start Time</div>
+                        </div>
+                        ` : ''}
+                        ${uniqueMonths > 0 ? `
+                        <div class="stat-card">
+                            <div class="value">${avgSessionsPerMonth}</div>
+                            <div class="label">Avg Sessions/Month</div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="insights-section" style="margin-top: 30px;">
+                        <h3 style="color: #764ba2; margin: 30px 0 15px 0; font-size: 1.4em;">📈 Additional Insights</h3>
+                        <div style="background: #f8f9fa; border-radius: 12px; padding: 20px;">
+                            ${bestMonthSessions ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Best Month:</strong> ${formatMonth(bestMonthSessions)} had the most sessions (${bestMonthSessionsCount})${bestMonthHours && bestMonthHours !== bestMonthSessions ? `, while ${formatMonth(bestMonthHours)} had the most hours (${bestMonthHoursValue.toFixed(1)} hours)` : ''}.
+                            </p>
+                            ` : ''}
+                            ${mostCommonDay ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Day Pattern:</strong> ${mostCommonDay} is the most common day for free sessions (${mostCommonDayCount} session${mostCommonDayCount !== 1 ? 's' : ''}).
+                            </p>
+                            ` : ''}
+                            ${mostCommonHour !== null ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Time Pattern:</strong> Sessions most commonly start at ${mostCommonHour}:00 (${mostCommonHourCount} session${mostCommonHourCount !== 1 ? 's' : ''}).
+                            </p>
+                            ` : ''}
+                            ${uniqueMonths > 0 ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>Frequency:</strong> Average of ${avgSessionsPerMonth} session${parseFloat(avgSessionsPerMonth) !== 1 ? 's' : ''} per month across ${uniqueMonths} month${uniqueMonths !== 1 ? 's' : ''}.
+                            </p>
+                            ` : ''}
+                            ${thisYearSessions.length > 0 ? `
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                <strong>This Year:</strong> ${thisYearSessions.length} session${thisYearSessions.length !== 1 ? 's' : ''} totaling ${thisYearHours.toFixed(1)} hours of free electricity in ${currentYear}.
+                            </p>
+                            ` : ''}
                         </div>
                     </div>
 
