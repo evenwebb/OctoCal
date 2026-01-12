@@ -385,6 +385,9 @@ class OctopusEnergyMonitor:
             # Cleanup old sessions
             self.cleanup_old_sessions()
 
+            # Flush history logger (saves all pending changes in one write)
+            self.history_logger.flush()
+
         except Exception as e:
             logging.error(f"Error in scrape cycle: {e}", exc_info=True)
 

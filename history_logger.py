@@ -4,7 +4,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Set
 from collections import defaultdict
 from session_parser import Session
 
@@ -24,6 +24,8 @@ class HistoryLogger:
         """
         self.history_file = history_file
         self.history: Dict[str, Any] = {"sessions": [], "last_updated": None}
+        self._session_ids: Set[str] = set()  # Cache for O(1) lookups
+        self._dirty = False  # Track if history needs saving
         self._load_history()
 
     def _load_history(self) -> None:
@@ -35,10 +37,15 @@ class HistoryLogger:
                 # Ensure sessions list exists
                 if "sessions" not in self.history:
                     self.history["sessions"] = []
+                # Build session ID cache for O(1) lookups
+                self._session_ids = {
+                    self._get_session_id_from_dict(s) for s in self.history["sessions"]
+                }
                 logger.debug(f"Loaded history: {len(self.history['sessions'])} sessions")
             except Exception as e:
                 logger.error(f"Failed to load history: {e}")
                 self.history = {"sessions": [], "last_updated": None}
+                self._session_ids = set()  # Reset cache on error
 
     def _save_history(self) -> None:
         """Save history to JSON file."""
@@ -47,9 +54,18 @@ class HistoryLogger:
             self.history["last_updated"] = datetime.now().isoformat()
             with open(self.history_file, 'w') as f:
                 json.dump(self.history, f, indent=2)
+            self._dirty = False  # Mark as saved
             logger.debug("Saved history")
         except Exception as e:
             logger.error(f"Failed to save history: {e}")
+
+    def flush(self) -> None:
+        """
+        Flush any pending history saves.
+        Call this at the end of processing to ensure all changes are saved.
+        """
+        if self._dirty:
+            self._save_history()
 
     def _get_session_id(self, session: Session) -> str:
         """
@@ -77,10 +93,7 @@ class HistoryLogger:
             True if session exists, False otherwise
         """
         session_id = self._get_session_id(session)
-        return any(
-            self._get_session_id_from_dict(s) == session_id
-            for s in self.history["sessions"]
-        )
+        return session_id in self._session_ids  # O(1) lookup instead of O(n)
 
     def _get_session_id_from_dict(self, session_dict: Dict[str, Any]) -> str:
         """Get session ID from dictionary representation."""
@@ -118,8 +131,10 @@ class HistoryLogger:
         if session.code:
             session_dict["code"] = session.code
 
+        session_id = self._get_session_id(session)
         self.history["sessions"].append(session_dict)
-        self._save_history()
+        self._session_ids.add(session_id)  # Update cache
+        self._dirty = True  # Mark as needing save, but don't save yet
         logger.info(f"Added session to history: {session.session_str}")
         return True
 

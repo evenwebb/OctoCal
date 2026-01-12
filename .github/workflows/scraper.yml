@@ -58,6 +58,13 @@ jobs:
         # Copy HTML webpages
         cp gh-pages-src/index.html gh-pages-deploy/
         cp gh-pages-src/history.html gh-pages-deploy/
+        # Copy thumbnail images if they exist
+        if [ -f gh-pages-src/home.thumbnail.jpeg ]; then
+          cp gh-pages-src/home.thumbnail.jpeg gh-pages-deploy/
+        fi
+        if [ -f gh-pages-src/history.thumbnail.jpeg ]; then
+          cp gh-pages-src/history.thumbnail.jpeg gh-pages-deploy/
+        fi
         # Copy JSON data files (create empty ones if they don't exist)
         if [ -f output/history.json ]; then
           cp output/history.json gh-pages-deploy/
@@ -69,10 +76,44 @@ jobs:
         else
           echo '{"upcoming_sessions": [], "last_updated": null}' > gh-pages-deploy/upcoming_sessions.json
         fi
-        # Add timestamp file
-        echo "Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > gh-pages-deploy/last-updated.txt
+
+    - name: Check for changes
+      id: check-changes
+      run: |
+        # Fetch gh-pages branch to compare (if it exists)
+        if git fetch origin gh-pages:gh-pages 2>/dev/null && git rev-parse --verify gh-pages >/dev/null 2>&1; then
+          echo "gh-pages branch exists, comparing files..."
+          CHANGED=false
+          for file in gh-pages-deploy/*; do
+            [ -f "$file" ] || continue
+            filename=$(basename "$file")
+            if git show gh-pages:"$filename" > /tmp/old_"$filename" 2>/dev/null; then
+              if ! diff -q "$file" /tmp/old_"$filename" > /dev/null 2>&1; then
+                CHANGED=true
+                echo "File changed: $filename"
+                break
+              fi
+            else
+              # File doesn't exist in gh-pages, so it's new
+              CHANGED=true
+              echo "New file: $filename"
+              break
+            fi
+          done
+        else
+          echo "gh-pages branch doesn't exist yet, will deploy"
+          CHANGED=true
+        fi
+        
+        if [ "$CHANGED" = "false" ]; then
+          echo "✅ No changes detected, skipping deployment to avoid unnecessary Pages build"
+        else
+          echo "📝 Changes detected, will deploy"
+        fi
+        echo "changed=$CHANGED" >> $GITHUB_OUTPUT
 
     - name: Deploy to GitHub Pages
+      if: steps.check-changes.outputs.changed == 'true'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -81,4 +122,4 @@ jobs:
         force_orphan: false
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Update calendar: ${{ github.event.head_commit.message }}'
+        commit_message: 'Update calendar and data'
