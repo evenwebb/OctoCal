@@ -418,7 +418,9 @@
         function formatMonthShort(monthKey) {
             const [year, month] = monthKey.split('-');
             const date = new Date(year, parseInt(month) - 1);
-            return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+            const monthName = date.toLocaleDateString('en-GB', { month: 'short' });
+            const shortYear = year.slice(-2); // Get last 2 digits of year
+            return `${monthName} ${shortYear}`;
         }
 
         function createSessionsChart(sessions) {
