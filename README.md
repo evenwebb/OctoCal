@@ -48,10 +48,9 @@ OctoCal automatically scrapes the Octopus Energy website for free electricity sl
 
 ## Two Ways to Use
 
-1. **GitHub Actions + Pages (Recommended)**: Fork the repo, enable Actions, get a public calendar URL that auto-updates hourly
-2. **Local/Self-Hosted**: Run on your own machine with full control and custom Apprise notifications
-
-> **Note**: The original OctoCal is live at https://evenwebb.github.io/OctoCal/ if you want to use it without forking!
+1. **Use the hosted version (Recommended)**: Subscribe to the live calendar at [evenwebb.github.io/OctoCal](https://evenwebb.github.io/OctoCal/) — zero setup, auto-updates hourly, no forking required
+2. **GitHub Actions + Pages**: Fork the repo, enable Actions, get your own public calendar URL that auto-updates hourly
+3. **Local/Self-Hosted**: Run on your own machine with full control and custom Apprise notifications
 
 ## Installation
 
@@ -110,7 +109,9 @@ The scraper will:
 
 ## GitHub Actions Deployment (Creates iCal file with reminders, no custom Apprise alerts)
 
-The easiest way to use this is via **GitHub Actions** with automatic deployment to **GitHub Pages**. Your calendar will be publicly accessible and auto-update every hour!
+> **Just want to subscribe?** Use the [hosted version](https://evenwebb.github.io/OctoCal/) — zero setup required.
+
+Want your own deployment? Fork the repo and use **GitHub Actions** with automatic deployment to **GitHub Pages**. Your calendar will be publicly accessible and auto-update every hour!
 
 ### Quick Setup
 
