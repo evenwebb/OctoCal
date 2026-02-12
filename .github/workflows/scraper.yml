@@ -76,6 +76,75 @@ jobs:
         else
           echo '{"upcoming_sessions": [], "last_updated": null}' > gh-pages-deploy/upcoming_sessions.json
         fi
+        # Create last-updated.txt for the "Last updated" display on the homepage
+        python3 -c "
+        import json
+        from pathlib import Path
+        out = Path('gh-pages-deploy/last-updated.txt')
+        for f in ['gh-pages-deploy/upcoming_sessions.json', 'gh-pages-deploy/history.json']:
+            if Path(f).exists():
+                try:
+                    data = json.load(open(f))
+                    ts = data.get('last_updated')
+                    if ts:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                        out.write_text(f\"Last updated: {dt.strftime('%d %b %Y at %H:%M')} GMT\")
+                        break
+                except: pass
+        if not out.exists():
+            out.write_text('Updates automatically every hour')
+        "
+
+    - name: Preserve timestamps when nothing changed
+      run: |
+        # Fetch gh-pages for comparison
+        if ! git fetch origin gh-pages:gh-pages 2>/dev/null || ! git rev-parse --verify gh-pages >/dev/null 2>&1; then
+          echo "gh-pages branch not available, skipping timestamp preservation"
+          exit 0
+        fi
+        # Preserve last_updated in JSON files when content unchanged (avoids unnecessary deployments)
+        python3 << 'PY'
+        import json
+        import subprocess
+        from pathlib import Path
+
+        def get_gh_pages_file(name):
+            try:
+                out = subprocess.run(['git', 'show', f'gh-pages:{name}'], capture_output=True, text=True, cwd='.')
+                return json.loads(out.stdout) if out.returncode == 0 else None
+            except:
+                return None
+
+        for fname, key in [('upcoming_sessions.json', 'upcoming_sessions'), ('history.json', 'sessions')]:
+            path = Path(f'gh-pages-deploy/{fname}')
+            if not path.exists():
+                continue
+            old = get_gh_pages_file(fname)
+            if not old:
+                continue
+            new = json.load(open(path))
+            old_data = json.dumps(old.get(key, []), sort_keys=True)
+            new_data = json.dumps(new.get(key, []), sort_keys=True)
+            if old_data == new_data:
+                new['last_updated'] = old.get('last_updated') or new.get('last_updated')
+                path.write_text(json.dumps(new, indent=2))
+                print(f"Preserved last_updated in {fname} (content unchanged)")
+
+        # Regenerate last-updated.txt from possibly-preserved JSON
+        out = Path('gh-pages-deploy/last-updated.txt')
+        for f in ['gh-pages-deploy/upcoming_sessions.json', 'gh-pages-deploy/history.json']:
+            if Path(f).exists():
+                try:
+                    data = json.load(open(f))
+                    ts = data.get('last_updated')
+                    if ts:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                        out.write_text(f"Last updated: {dt.strftime('%d %b %Y at %H:%M')} GMT")
+                        break
+                except: pass
+        PY
 
     - name: Check for changes
       id: check-changes

@@ -62,7 +62,8 @@ class ICalGenerator:
             event.add('summary', vText('Octopus Free Electricity'))
             event.add('dtstart', session.start_time)
             event.add('dtend', session.end_time)
-            event.add('dtstamp', datetime.now())
+            # Use session start for deterministic output (avoids unnecessary deployments when unchanged)
+            event.add('dtstamp', session.start_time)
 
             # Generate unique UID based on session string and start time
             uid = f"{session.start_time.strftime('%Y%m%d%H%M')}@octopus.energy"
