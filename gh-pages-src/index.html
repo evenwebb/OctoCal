@@ -82,12 +82,6 @@
             margin-bottom: 10px;
         }
 
-        .updated {
-            color: #999;
-            font-size: 0.9em;
-            font-style: italic;
-        }
-
         .description {
             background: #f8f9fa;
             border-left: 4px solid #764ba2;
@@ -408,7 +402,6 @@
             <div class="octopus-icon">🐙⚡</div>
             <h1>OctoCal</h1>
             <p class="subtitle">Never miss an Octopus Energy free electricity session!</p>
-            <p class="updated" id="last-updated">Updates automatically every hour</p>
             <p style="margin-top: 15px;">
                 <a href="history.html" class="nav-link">📊 View Session History & Stats</a>
             </p>
@@ -531,16 +524,6 @@
         document.getElementById('calendar-url').textContent = calendarUrl;
         document.querySelectorAll('.calendar-btn')[0].href = webcalUrl;
         document.querySelectorAll('.calendar-btn')[1].href = `https://calendar.google.com/calendar/render?cid=${webcalUrl}`;
-
-        // Try to fetch last updated time
-        fetch('last-updated.txt')
-            .then(response => response.text())
-            .then(text => {
-                document.getElementById('last-updated').textContent = text;
-            })
-            .catch(() => {
-                document.getElementById('last-updated').textContent = 'Updates automatically every hour';
-            });
 
         // Fetch and display upcoming sessions
         function formatDate(dateString) {

@@ -2,8 +2,8 @@ name: Scrape Octopus Energy Free Electricity
 
 on:
   schedule:
-    # Run every hour at minute 0
-    - cron: '0 * * * *'
+    # Run every 3 hours at minute 0
+    - cron: '0 */3 * * *'
   workflow_dispatch:  # Allow manual trigger
   push:
     branches: [ main, master ]
@@ -13,6 +13,10 @@ on:
       - 'config.yaml.example'
       - 'gh-pages-src/**'
 
+concurrency:
+  group: octocal-scraper
+  cancel-in-progress: true
+
 jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
@@ -20,19 +24,110 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
+    - name: Fetch gh-pages branch
+      id: fetch-gh-pages
+      run: |
+        if git fetch --depth=1 origin gh-pages:gh-pages 2>/dev/null && git rev-parse --verify gh-pages >/dev/null 2>&1; then
+          echo "has_gh_pages=true" >> "$GITHUB_OUTPUT"
+          echo "Fetched gh-pages branch"
+        else
+          echo "has_gh_pages=false" >> "$GITHUB_OUTPUT"
+          echo "gh-pages branch not available"
+        fi
+
+    - name: Determine run mode
+      id: run-mode
+      run: |
+        RUN_SCRAPER=true
+        MODE_REASON="non-push trigger"
+
+        if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+          # For push events, skip scraper only when every changed file is static content.
+          RUN_SCRAPER=false
+          HAS_FILES=false
+          PAYLOAD_TOO_LARGE=false
+          while IFS= read -r token; do
+            [ -n "$token" ] || continue
+            case "$token" in
+              __PAYLOAD_TOO_LARGE__)
+                PAYLOAD_TOO_LARGE=true
+                break
+                ;;
+              *)
+                HAS_FILES=true
+                case "$token" in
+                  gh-pages-src/*) ;;
+                  *)
+                    RUN_SCRAPER=true
+                    MODE_REASON="push includes non-static changes ($token)"
+                    break
+                    ;;
+                esac
+                ;;
+            esac
+          done < <(python3 << 'PY'
+        import json
+        import os
+
+        event_path = os.environ.get('GITHUB_EVENT_PATH')
+        if not event_path:
+            raise SystemExit(0)
+
+        with open(event_path, 'r', encoding='utf-8') as fh:
+            payload = json.load(fh)
+
+        commits = payload.get('commits', [])
+        if payload.get('size', len(commits)) > len(commits):
+            print('__PAYLOAD_TOO_LARGE__')
+            raise SystemExit(0)
+
+        for commit in commits:
+            for key in ('added', 'modified', 'removed'):
+                for file in commit.get(key, []):
+                    print(file)
+        PY
+          )
+
+          if [ "$PAYLOAD_TOO_LARGE" = "true" ]; then
+            RUN_SCRAPER=true
+            MODE_REASON="push payload truncated; running scraper for safety"
+          elif [ "$RUN_SCRAPER" = "false" ]; then
+            if [ "$HAS_FILES" = "true" ]; then
+              if [ "${{ steps.fetch-gh-pages.outputs.has_gh_pages }}" = "true" ]; then
+                MODE_REASON="push with static-only changes"
+              else
+                RUN_SCRAPER=true
+                MODE_REASON="gh-pages missing; running scraper to generate data artifacts"
+              fi
+            else
+              # Safety fallback when changed files are unavailable.
+              RUN_SCRAPER=true
+              MODE_REASON="push file list unavailable"
+            fi
+          fi
+        fi
+
+        echo "run_scraper=$RUN_SCRAPER" >> "$GITHUB_OUTPUT"
+        echo "reason=$MODE_REASON" >> "$GITHUB_OUTPUT"
+        echo "Run mode: run_scraper=$RUN_SCRAPER ($MODE_REASON)"
 
     - name: Set up Python
+      if: steps.run-mode.outputs.run_scraper == 'true'
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         cache: 'pip'
 
     - name: Install dependencies
+      if: steps.run-mode.outputs.run_scraper == 'true'
       run: |
-        pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install --disable-pip-version-check -q -r requirements.txt
 
     - name: Prepare history data
+      if: steps.run-mode.outputs.run_scraper == 'true'
       run: |
         mkdir -p output
         # Priority 1: Use committed seed data if available
@@ -40,21 +135,20 @@ jobs:
           cp gh-pages-data/history.json output/history.json
           echo "Using seed history.json from gh-pages-data/"
         # Priority 2: Download existing from gh-pages branch
-        elif git fetch origin gh-pages:gh-pages 2>/dev/null && git show gh-pages:history.json > output/history.json 2>/dev/null; then
+        elif [ "${{ steps.fetch-gh-pages.outputs.has_gh_pages }}" = "true" ] && git show gh-pages:history.json > output/history.json 2>/dev/null; then
           echo "Downloaded existing history.json from gh-pages branch"
         else
           echo "No existing history.json found, will create new one"
         fi
 
     - name: Run scraper
+      if: steps.run-mode.outputs.run_scraper == 'true'
       run: |
         python3 main.py --single-run
 
     - name: Prepare GitHub Pages content
       run: |
         mkdir -p gh-pages-deploy
-        # Copy generated iCal file
-        cp output/octopus_free_electricity.ics gh-pages-deploy/
         # Copy HTML webpages
         cp gh-pages-src/index.html gh-pages-deploy/
         cp gh-pages-src/history.html gh-pages-deploy/
@@ -65,121 +159,114 @@ jobs:
         if [ -f gh-pages-src/history.thumbnail.jpeg ]; then
           cp gh-pages-src/history.thumbnail.jpeg gh-pages-deploy/
         fi
-        # Copy JSON data files (create empty ones if they don't exist)
-        if [ -f output/history.json ]; then
-          cp output/history.json gh-pages-deploy/
+
+        if [ "${{ steps.run-mode.outputs.run_scraper }}" = "true" ]; then
+          # Scraper mode: use freshly generated artifacts.
+          cp output/octopus_free_electricity.ics gh-pages-deploy/
+          if [ -f output/history.json ]; then
+            cp output/history.json gh-pages-deploy/
+          else
+            echo '{"sessions": [], "last_updated": null}' > gh-pages-deploy/history.json
+          fi
+          if [ -f output/upcoming_sessions.json ]; then
+            cp output/upcoming_sessions.json gh-pages-deploy/
+          else
+            echo '{"upcoming_sessions": [], "last_updated": null}' > gh-pages-deploy/upcoming_sessions.json
+          fi
         else
-          echo '{"sessions": [], "last_updated": null}' > gh-pages-deploy/history.json
+          # Static-only mode: reuse existing published data to avoid scraping work.
+          if [ "${{ steps.fetch-gh-pages.outputs.has_gh_pages }}" = "true" ] && git show gh-pages:octopus_free_electricity.ics > gh-pages-deploy/octopus_free_electricity.ics 2>/dev/null; then
+            echo "Reused octopus_free_electricity.ics from gh-pages"
+          else
+            printf 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OctoCal//EN\nEND:VCALENDAR\n' > gh-pages-deploy/octopus_free_electricity.ics
+          fi
+          if [ "${{ steps.fetch-gh-pages.outputs.has_gh_pages }}" = "true" ] && git show gh-pages:history.json > gh-pages-deploy/history.json 2>/dev/null; then
+            echo "Reused history.json from gh-pages"
+          else
+            echo '{"sessions": [], "last_updated": null}' > gh-pages-deploy/history.json
+          fi
+          if [ "${{ steps.fetch-gh-pages.outputs.has_gh_pages }}" = "true" ] && git show gh-pages:upcoming_sessions.json > gh-pages-deploy/upcoming_sessions.json 2>/dev/null; then
+            echo "Reused upcoming_sessions.json from gh-pages"
+          else
+            echo '{"upcoming_sessions": [], "last_updated": null}' > gh-pages-deploy/upcoming_sessions.json
+          fi
         fi
-        if [ -f output/upcoming_sessions.json ]; then
-          cp output/upcoming_sessions.json gh-pages-deploy/
-        else
-          echo '{"upcoming_sessions": [], "last_updated": null}' > gh-pages-deploy/upcoming_sessions.json
-        fi
-        # Create last-updated.txt for the "Last updated" display on the homepage
-        python3 -c "
-        import json
-        from pathlib import Path
-        out = Path('gh-pages-deploy/last-updated.txt')
-        for f in ['gh-pages-deploy/upcoming_sessions.json', 'gh-pages-deploy/history.json']:
-            if Path(f).exists():
-                try:
-                    data = json.load(open(f))
-                    ts = data.get('last_updated')
-                    if ts:
-                        from datetime import datetime
-                        dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-                        out.write_text(f\"Last updated: {dt.strftime('%d %b %Y at %H:%M')} GMT\")
-                        break
-                except: pass
-        if not out.exists():
-            out.write_text('Updates automatically every hour')
-        "
-
-    - name: Preserve timestamps when nothing changed
-      run: |
-        # Fetch gh-pages for comparison
-        if ! git fetch origin gh-pages:gh-pages 2>/dev/null || ! git rev-parse --verify gh-pages >/dev/null 2>&1; then
-          echo "gh-pages branch not available, skipping timestamp preservation"
-          exit 0
-        fi
-        # Preserve last_updated in JSON files when content unchanged (avoids unnecessary deployments)
-        python3 << 'PY'
-        import json
-        import subprocess
-        from pathlib import Path
-
-        def get_gh_pages_file(name):
-            try:
-                out = subprocess.run(['git', 'show', f'gh-pages:{name}'], capture_output=True, text=True, cwd='.')
-                return json.loads(out.stdout) if out.returncode == 0 else None
-            except:
-                return None
-
-        for fname, key in [('upcoming_sessions.json', 'upcoming_sessions'), ('history.json', 'sessions')]:
-            path = Path(f'gh-pages-deploy/{fname}')
-            if not path.exists():
-                continue
-            old = get_gh_pages_file(fname)
-            if not old:
-                continue
-            new = json.load(open(path))
-            old_data = json.dumps(old.get(key, []), sort_keys=True)
-            new_data = json.dumps(new.get(key, []), sort_keys=True)
-            if old_data == new_data:
-                new['last_updated'] = old.get('last_updated') or new.get('last_updated')
-                path.write_text(json.dumps(new, indent=2))
-                print(f"Preserved last_updated in {fname} (content unchanged)")
-
-        # Regenerate last-updated.txt from possibly-preserved JSON
-        out = Path('gh-pages-deploy/last-updated.txt')
-        for f in ['gh-pages-deploy/upcoming_sessions.json', 'gh-pages-deploy/history.json']:
-            if Path(f).exists():
-                try:
-                    data = json.load(open(f))
-                    ts = data.get('last_updated')
-                    if ts:
-                        from datetime import datetime
-                        dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-                        out.write_text(f"Last updated: {dt.strftime('%d %b %Y at %H:%M')} GMT")
-                        break
-                except: pass
-        PY
 
     - name: Check for changes
       id: check-changes
       run: |
-        # Fetch gh-pages branch to compare (if it exists)
-        if git fetch origin gh-pages:gh-pages 2>/dev/null && git rev-parse --verify gh-pages >/dev/null 2>&1; then
-          echo "gh-pages branch exists, comparing files..."
-          CHANGED=false
-          for file in gh-pages-deploy/*; do
-            [ -f "$file" ] || continue
-            filename=$(basename "$file")
-            if git show gh-pages:"$filename" > /tmp/old_"$filename" 2>/dev/null; then
-              if ! diff -q "$file" /tmp/old_"$filename" > /dev/null 2>&1; then
-                CHANGED=true
-                echo "File changed: $filename"
-                break
-              fi
-            else
-              # File doesn't exist in gh-pages, so it's new
-              CHANGED=true
-              echo "New file: $filename"
-              break
-            fi
-          done
-        else
-          echo "gh-pages branch doesn't exist yet, will deploy"
-          CHANGED=true
-        fi
-        
-        if [ "$CHANGED" = "false" ]; then
-          echo "✅ No changes detected, skipping deployment to avoid unnecessary Pages build"
-        else
-          echo "📝 Changes detected, will deploy"
-        fi
-        echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+        HAVE_GH_PAGES="${{ steps.fetch-gh-pages.outputs.has_gh_pages }}"
+
+        HAVE_GH_PAGES="$HAVE_GH_PAGES" python3 << 'PY'
+        import json
+        import os
+        import subprocess
+        from pathlib import Path
+
+        deploy_dir = Path('gh-pages-deploy')
+        has_gh_pages = os.environ.get('HAVE_GH_PAGES', 'false') == 'true'
+
+        def git_blob(path: str):
+            proc = subprocess.run(
+                ['git', 'show', f'gh-pages:{path}'],
+                capture_output=True,
+                text=False,
+            )
+            return proc.stdout if proc.returncode == 0 else None
+
+        def normalized_bytes(name: str, payload: bytes) -> bytes:
+            # Ignore metadata-only churn in JSON files.
+            if name in {'history.json', 'upcoming_sessions.json'}:
+                try:
+                    data = json.loads(payload.decode('utf-8'))
+                    if isinstance(data, dict):
+                        data.pop('last_updated', None)
+                    return (json.dumps(data, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8')
+                except Exception:
+                    return payload
+            return payload
+
+        changed = False
+
+        if has_gh_pages:
+            # Compare complete file sets (including deletions).
+            old_files_proc = subprocess.run(
+                ['git', 'ls-tree', '-r', '--name-only', 'gh-pages'],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            old_files = {line.strip() for line in old_files_proc.stdout.splitlines() if line.strip()}
+            new_files = {p.name for p in deploy_dir.iterdir() if p.is_file()}
+
+            if old_files != new_files:
+                changed = True
+                added = sorted(new_files - old_files)
+                removed = sorted(old_files - new_files)
+                if added:
+                    print(f'New files: {", ".join(added)}')
+                if removed:
+                    print(f'Removed files: {", ".join(removed)}')
+            else:
+                for name in sorted(new_files):
+                    old_raw = git_blob(name)
+                    new_raw = (deploy_dir / name).read_bytes()
+                    if old_raw is None or normalized_bytes(name, old_raw) != normalized_bytes(name, new_raw):
+                        changed = True
+                        print(f'File changed: {name}')
+                        break
+        else:
+            changed = True
+            print("gh-pages branch doesn't exist yet, will deploy")
+
+        if changed:
+            print('Changes detected, will deploy')
+        else:
+            print('No changes detected, skipping deployment to avoid unnecessary Pages build')
+
+        with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+            fh.write(f"changed={'true' if changed else 'false'}\\n")
+        PY
 
     - name: Deploy to GitHub Pages
       if: steps.check-changes.outputs.changed == 'true'
