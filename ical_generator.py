@@ -48,6 +48,8 @@ class ICalGenerator:
         cal.add('method', 'PUBLISH')
         cal.add('x-wr-calname', vText('Octopus Free Electricity'))
         cal.add('x-wr-timezone', vText(self.timezone))
+        cal.add('REFRESH-INTERVAL;VALUE=DURATION', vText('PT3H'))
+        cal.add('X-PUBLISHED-TTL', vText('PT3H'))
         if sessions:
             description = 'Free electricity sessions from Octopus Energy'
         else:

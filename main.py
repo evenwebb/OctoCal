@@ -73,6 +73,19 @@ def get_config_value(config: Dict[str, Any], key: str, default: Any = None) -> A
     return value
 
 
+def validate_config(config: Dict[str, Any]) -> list[str]:
+    """Check for common config mistakes. Returns list of warnings."""
+    warnings = []
+    if not get_config_value(config, 'scraper.url'):
+        warnings.append("scraper.url is empty — no URL to scrape")
+    if not get_config_value(config, 'ical.output_dir'):
+        warnings.append("ical.output_dir is empty — no output directory set")
+    apprise_urls = get_config_value(config, 'notifications.apprise_urls', [])
+    if apprise_urls and not any(apprise_urls):
+        warnings.append("notifications.apprise_urls contains only empty strings")
+    return warnings
+
+
 class SessionTracker:
     """Tracks sessions and notifications that have been sent."""
 
@@ -491,6 +504,12 @@ def main():
 
     try:
         monitor = OctopusEnergyMonitor(config_path)
+
+        # Validate config and log warnings (#11)
+        cfg_warnings = validate_config(monitor.config)
+        if cfg_warnings:
+            for w in cfg_warnings:
+                logging.warning("Config: %s", w)
 
         if args.single_run:
             # Run once and exit

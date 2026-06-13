@@ -26,6 +26,7 @@
     <meta name="twitter:description" content="Automatically track Octopus Energy free electricity sessions. Get calendar reminders, view upcoming sessions, and never miss a free electricity period.">
     <meta name="twitter:image" content="https://evenwebb.github.io/OctoCal/home.thumbnail.jpeg">
     <meta name="twitter:image:alt" content="OctoCal - Octopus Energy Free Electricity Calendar">
+    <script type="application/ld+json" id="json-ld"></script>
     <style>
         * {
             margin: 0;
@@ -459,6 +460,7 @@
         </div>
 
         <div class="upcoming-sessions">
+            <div id="days-since" class="days-since-counter" style="text-align:center;padding:1rem;margin-bottom:1rem;background:var(--card-bg);border-radius:12px"></div>
             <h2>⚡ Upcoming Sessions</h2>
             <div id="upcoming-sessions-container">
                 <div class="no-sessions">
@@ -613,6 +615,32 @@
                     </div>
                 `;
             });
+
+        // Days since last session counter (#1)
+        fetch('history.json')
+            .then(r => r.ok ? r.json() : { sessions: [] })
+            .then(data => {
+                const sessions = (data.sessions || []).sort((a, b) =>
+                    new Date(b.end_time) - new Date(a.end_time));
+                const lastEnd = sessions.length > 0 ? new Date(sessions[0].end_time) : null;
+                const counter = document.getElementById('days-since');
+                if (counter && lastEnd) {
+                    const days = Math.floor((Date.now() - lastEnd) / 86400000);
+                    counter.innerHTML = days === 0
+                        ? '<span class="stat-num">Today</span><span class="stat-label">Last free session ended today</span>'
+                        : `<span class="stat-num">${days}</span><span class="stat-label">day${days !== 1 ? 's' : ''} since last session</span>`;
+                }
+                // JSON-LD structured data (#13)
+                const jsonLd = {
+                    '@context': 'https://schema.org',
+                    '@type': 'WebSite',
+                    name: 'OctoCal',
+                    description: 'Octopus Energy free electricity session calendar',
+                    url: 'https://evenwebb.github.io/OctoCal/'
+                };
+                document.getElementById('json-ld').textContent = JSON.stringify(jsonLd);
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>

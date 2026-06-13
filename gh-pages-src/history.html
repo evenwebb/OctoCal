@@ -950,6 +950,37 @@
                             <canvas id="sessionsChart"></canvas>
                         </div>
                     </div>
+
+                    <div class="stats-grid" style="margin-top:20px">
+                        <div class="stat-card">
+                            <div class="value">${(totalHours / Math.max(1, uniqueMonths)).toFixed(1)}</div>
+                            <div class="label">Avg Hours/Month</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${(totalHours / Math.max(1, totalSessions)).toFixed(2)}</div>
+                            <div class="label">Avg Hours/Session</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${uniqueMonths}</div>
+                            <div class="label">Months Tracked</div>
+                        </div>
+                    </div>
+
+                    <div class="monthly-heatmap" style="margin-top:20px;background:#f8f9fa;border-radius:12px;padding:20px">
+                        <h3 style="color:#764ba2;margin-bottom:15px;font-size:1.2em">🗓 Monthly Heatmap</h3>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px" id="heatmap-container">
+                            ${sortedMonths.slice(-18).map(m => {
+                                const val = hoursPerMonth[m] || 0;
+                                const maxVal = Math.max(...Object.values(hoursPerMonth), 1);
+                                const intensity = Math.min(1, val / maxVal);
+                                const r = Math.round(118 + (255-118) * intensity);
+                                const g = Math.round(75 + (255-75) * (1-intensity));
+                                const b = Math.round(162 + (255-162) * (1-intensity));
+                                return '<span title="' + formatMonth(m) + ': ' + val.toFixed(1) + 'h" style="display:inline-block;width:32px;height:32px;border-radius:4px;background:rgb('+r+','+g+','+b+');font-size:8px;text-align:center;line-height:32px;color:'+(intensity>0.5?'#fff':'#333')+'">'+m.slice(-2)+'</span>';
+                            }).join('')}
+                        </div>
+                        <p style="margin-top:8px;font-size:0.8em;color:#666">Darker = more free hours that month</p>
+                    </div>
                 `;
 
                 // Create bar chart for last 12 months (if Chart.js is loaded)
