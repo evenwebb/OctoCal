@@ -29,7 +29,8 @@ class OctopusScraper:
             HTML content as string, or None if fetch fails
         """
         try:
-            response = requests.get(self.url, timeout=30)
+            headers = {"User-Agent": "OctoCal/1.0 (calendar automation; +https://github.com/evenwebb/OctoCal)"}
+            response = requests.get(self.url, timeout=30, headers=headers)
             response.raise_for_status()
             logger.debug(f"Fetched page content: {len(response.text)} bytes")
             return response.text

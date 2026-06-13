@@ -204,6 +204,7 @@ class OctopusEnergyMonitor:
 
         # Store parsed sessions
         self.sessions: List[Session] = []
+        self._session_strs: Set[str] = set()  # O(1) dedup cache
 
     def _setup_logging(self) -> None:
         """Setup logging configuration."""
@@ -252,6 +253,7 @@ class OctopusEnergyMonitor:
                 session = self.parser.parse(session_str)
                 if session:
                     self.sessions.append(session)
+                    self._session_strs.add(session_str)
                     self.tracker.mark_seen(session_str)
                     new_sessions_found = True
                     logging.info(f"New session: {session_str}")
@@ -270,7 +272,8 @@ class OctopusEnergyMonitor:
                 if session:
                     # Log to history (will skip if already exists)
                     self.history_logger.add_session(session)
-                    if not any(s.session_str == session_str for s in self.sessions):
+                    if session_str not in self._session_strs:
+                        self._session_strs.add(session_str)
                         self.sessions.append(session)
 
         return new_sessions_found

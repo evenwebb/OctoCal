@@ -183,9 +183,9 @@ class Notifier:
         now = datetime.now()
         notification_time = session.start_time - timedelta(hours=self.upcoming_hours)
 
-        # Check if we're within the notification window (5 minute tolerance)
-        time_diff = abs((now - notification_time).total_seconds())
-        return time_diff < 300  # 5 minutes in seconds
+        # Check if we're within the notification window (5 minute tolerance, forward only)
+        time_diff = (now - notification_time).total_seconds()
+        return 0 <= time_diff < 300  # 5 minutes in seconds, only after notification time
 
     def should_notify_start(self, session: Session) -> bool:
         """

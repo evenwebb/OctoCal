@@ -1,5 +1,6 @@
 """iCal file generator for Octopus Energy free electricity sessions."""
 
+import hashlib
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -66,7 +67,8 @@ class ICalGenerator:
             event.add('dtstamp', session.start_time)
 
             # Generate unique UID based on session string and start time
-            uid = f"{session.start_time.strftime('%Y%m%d%H%M')}@octopus.energy"
+            uid_seed = f"{session.session_str}|{session.start_time.isoformat()}"
+            uid = f"{hashlib.sha1(uid_seed.encode()).hexdigest()}@octopus.energy"
             event.add('uid', uid)
 
             # Add description
@@ -119,11 +121,13 @@ class ICalGenerator:
             cal.add_component(event)
             logger.debug(f"Added event for session: {session.session_str}")
 
-        # Write to file
+        # Write to file atomically
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, 'wb') as f:
+            tmp_path = output_path.with_suffix('.tmp')
+            with open(tmp_path, 'wb') as f:
                 f.write(cal.to_ical())
+            tmp_path.replace(output_path)
             logger.info(f"Generated iCal file: {output_path} ({len(sessions)} event(s))")
             return True
         except Exception as e:

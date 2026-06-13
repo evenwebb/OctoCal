@@ -20,6 +20,8 @@ concurrency:
 jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
     - name: Checkout repository
@@ -118,13 +120,20 @@ jobs:
       if: steps.run-mode.outputs.run_scraper == 'true'
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
-        cache: 'pip'
+        python-version: '3.12'
+
+    - uses: astral-sh/setup-uv@v4
+      if: steps.run-mode.outputs.run_scraper == 'true'
+      with:
+        enable-cache: true
+        cache-dependency-glob: requirements.txt
 
     - name: Install dependencies
       if: steps.run-mode.outputs.run_scraper == 'true'
+      env:
+        UV_SYSTEM_PYTHON: 1
       run: |
-        pip install --disable-pip-version-check -q -r requirements.txt
+        uv pip install -r requirements.txt
 
     - name: Prepare history data
       if: steps.run-mode.outputs.run_scraper == 'true'
@@ -144,7 +153,20 @@ jobs:
     - name: Run scraper
       if: steps.run-mode.outputs.run_scraper == 'true'
       run: |
-        python3 main.py --single-run
+        ATTEMPTS=2
+        for i in $(seq 1 $ATTEMPTS); do
+          echo "::group::Attempt $i of $ATTEMPTS"
+          if python main.py --single-run; then
+            echo "::endgroup::"
+            exit 0
+          fi
+          echo "::endgroup::"
+          if [ "$i" -lt "$ATTEMPTS" ]; then
+            sleep $((i * 10))
+          fi
+        done
+        echo "All scraper attempts failed"
+        exit 1
 
     - name: Prepare GitHub Pages content
       run: |
@@ -270,7 +292,7 @@ jobs:
 
     - name: Deploy to GitHub Pages
       if: steps.check-changes.outputs.changed == 'true'
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./gh-pages-deploy
