@@ -69,13 +69,13 @@ class OctopusScraper:
             text_block = re.sub(r'<[^>]+>', '', block).strip()
 
             # Split by newlines or common separators to avoid concatenation
-            potential_sessions = re.split(r'\n|Next|Power Tower', text_block)
+            potential_sessions = re.split(r'\n|\bNext\b|\bPower Tower\b', text_block)
             for part in potential_sessions:
                 part = part.strip()
                 if part:
                     # Use regex findall to extract valid session strings from each part
                     found = re.findall(
-                        r'\d+(?:am|pm)?-\d+(?:am|pm)?,\s*\w+\s*\d+(?:st|nd|rd|th)?\s*\w+',
+                        r'(?:\d+|midnight|noon)(?:am|pm)?-(?:\d+|midnight|noon)(?:am|pm)?,\s*\w+\s*\d+(?:st|nd|rd|th)?\s*\w+',
                         part,
                         re.IGNORECASE
                     )
@@ -102,7 +102,7 @@ class OctopusScraper:
 
                 # Extract session string
                 found = re.findall(
-                    r'\d+(?:am|pm)?-\d+(?:am|pm)?,\s*\w+\s*\d+(?:st|nd|rd|th)?\s*\w+',
+                    r'(?:\d+|midnight|noon)(?:am|pm)?-(?:\d+|midnight|noon)(?:am|pm)?,\s*\w+\s*\d+(?:st|nd|rd|th)?\s*\w+',
                     text_block,
                     re.IGNORECASE
                 )
@@ -120,7 +120,7 @@ class OctopusScraper:
                     session_clean = re.sub(r'<[^>]+>', '', session_raw)
                     # Split if multiple are concatenated
                     found = re.findall(
-                        r'\d+(?:am|pm)?-\d+(?:am|pm)?,\s*\w+\s*\d+(?:st|nd|rd|th)?\s*\w+',
+                        r'(?:\d+|midnight|noon)(?:am|pm)?-(?:\d+|midnight|noon)(?:am|pm)?,\s*\w+\s*\d+(?:st|nd|rd|th)?\s*\w+',
                         session_clean,
                         re.IGNORECASE
                     )

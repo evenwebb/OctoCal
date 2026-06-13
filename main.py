@@ -101,7 +101,7 @@ class SessionTracker:
                     self.notified_start = set(data.get('notified_start', []))
                     self.notified_end = set(data.get('notified_end', []))
                 logging.debug(f"Loaded state: {len(self.seen_sessions)} sessions")
-            except Exception as e:
+            except (json.JSONDecodeError, OSError) as e:
                 logging.error(f"Failed to load state: {e}")
 
     def _save_state(self) -> None:
@@ -116,7 +116,7 @@ class SessionTracker:
                     'notified_end': list(self.notified_end),
                 }, f, indent=2)
             logging.debug("Saved state")
-        except Exception as e:
+        except (OSError, TypeError) as e:
             logging.error(f"Failed to save state: {e}")
 
     def is_new_session(self, session_str: str) -> bool:
@@ -456,7 +456,28 @@ def main():
         action='store_true',
         help='Run once and exit (useful for cron/GitHub Actions)'
     )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Scrape and process but skip writing output files'
+    )
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Enable debug logging'
+    )
+    parser.add_argument(
+        '--quiet', '-q',
+        action='store_true',
+        help='Suppress non-error output'
+    )
     args = parser.parse_args()
+
+    # Set logging level based on verbose/quiet flags
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    elif args.quiet:
+        logging.getLogger().setLevel(logging.WARNING)
 
     # Determine config file
     config_path = args.config

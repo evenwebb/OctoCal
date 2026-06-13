@@ -130,11 +130,16 @@ class SessionParser:
         try:
             date_obj = datetime.strptime(date_str_full, '%A %d %B %Y')
         except ValueError:
-            # Try next year if the date is in the past
-            try:
-                date_str_full = f"{date_part_clean} {current_year + 1}"
-                date_obj = datetime.strptime(date_str_full, '%A %d %B %Y')
-            except ValueError:
+            date_obj = None
+            # Try adjacent years
+            for year_offset in (1, -1, 2):
+                try:
+                    date_obj = datetime.strptime(
+                        f"{date_part_clean} {current_year + year_offset}", '%A %d %B %Y')
+                    break
+                except ValueError:
+                    continue
+            if date_obj is None:
                 logger.error(f"Failed to parse date: {date_part}")
                 return None
 

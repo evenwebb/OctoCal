@@ -85,6 +85,7 @@ class ICalGenerator:
             # Add status and other properties
             event.add('status', vText('CONFIRMED'))
             event.add('transp', vText('TRANSPARENT'))
+            event.add('sequence', 0)
 
             # Add categories
             event.add('categories', vText('Free Electricity,Octopus Energy'))
