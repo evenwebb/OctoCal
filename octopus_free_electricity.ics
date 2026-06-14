@@ -3,7 +3,9 @@ VERSION:2.0
 PRODID:-//Octopus Energy Free Electricity//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
+REFRESH-INTERVAL:3:00:00
+X-PUBLISHED-TTL:3:00:00
 X-WR-CALDESC:No free electricity sessions are currently scheduled.
 X-WR-CALNAME:Octopus Free Electricity
-X-WR-TIMEZONE:GMT
+X-WR-TIMEZONE:Europe/London
 END:VCALENDAR

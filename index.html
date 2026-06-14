@@ -26,6 +26,7 @@
     <meta name="twitter:description" content="Automatically track Octopus Energy free electricity sessions. Get calendar reminders, view upcoming sessions, and never miss a free electricity period.">
     <meta name="twitter:image" content="https://evenwebb.github.io/OctoCal/home.thumbnail.jpeg">
     <meta name="twitter:image:alt" content="OctoCal - Octopus Energy Free Electricity Calendar">
+    <script type="application/ld+json" id="json-ld"></script>
     <style>
         * {
             margin: 0;
@@ -80,12 +81,6 @@
             color: #666;
             font-size: 1.2em;
             margin-bottom: 10px;
-        }
-
-        .updated {
-            color: #999;
-            font-size: 0.9em;
-            font-style: italic;
         }
 
         .description {
@@ -408,7 +403,6 @@
             <div class="octopus-icon">🐙⚡</div>
             <h1>OctoCal</h1>
             <p class="subtitle">Never miss an Octopus Energy free electricity session!</p>
-            <p class="updated" id="last-updated">Updates automatically every hour</p>
             <p style="margin-top: 15px;">
                 <a href="history.html" class="nav-link">📊 View Session History & Stats</a>
             </p>
@@ -466,6 +460,7 @@
         </div>
 
         <div class="upcoming-sessions">
+            <div id="days-since" class="days-since-counter" style="text-align:center;padding:1rem;margin-bottom:1rem;background:var(--card-bg);border-radius:12px"></div>
             <h2>⚡ Upcoming Sessions</h2>
             <div id="upcoming-sessions-container">
                 <div class="no-sessions">
@@ -531,16 +526,6 @@
         document.getElementById('calendar-url').textContent = calendarUrl;
         document.querySelectorAll('.calendar-btn')[0].href = webcalUrl;
         document.querySelectorAll('.calendar-btn')[1].href = `https://calendar.google.com/calendar/render?cid=${webcalUrl}`;
-
-        // Try to fetch last updated time
-        fetch('last-updated.txt')
-            .then(response => response.text())
-            .then(text => {
-                document.getElementById('last-updated').textContent = text;
-            })
-            .catch(() => {
-                document.getElementById('last-updated').textContent = 'Updates automatically every hour';
-            });
 
         // Fetch and display upcoming sessions
         function formatDate(dateString) {
@@ -630,6 +615,32 @@
                     </div>
                 `;
             });
+
+        // Days since last session counter (#1)
+        fetch('history.json')
+            .then(r => r.ok ? r.json() : { sessions: [] })
+            .then(data => {
+                const sessions = (data.sessions || []).sort((a, b) =>
+                    new Date(b.end_time) - new Date(a.end_time));
+                const lastEnd = sessions.length > 0 ? new Date(sessions[0].end_time) : null;
+                const counter = document.getElementById('days-since');
+                if (counter && lastEnd) {
+                    const days = Math.floor((Date.now() - lastEnd) / 86400000);
+                    counter.innerHTML = days === 0
+                        ? '<span class="stat-num">Today</span><span class="stat-label">Last free session ended today</span>'
+                        : `<span class="stat-num">${days}</span><span class="stat-label">day${days !== 1 ? 's' : ''} since last session</span>`;
+                }
+                // JSON-LD structured data (#13)
+                const jsonLd = {
+                    '@context': 'https://schema.org',
+                    '@type': 'WebSite',
+                    name: 'OctoCal',
+                    description: 'Octopus Energy free electricity session calendar',
+                    url: 'https://evenwebb.github.io/OctoCal/'
+                };
+                document.getElementById('json-ld').textContent = JSON.stringify(jsonLd);
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>
