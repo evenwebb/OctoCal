@@ -12,7 +12,7 @@ scraper:
 ical:
   output_dir: "./output"
   filename: "octopus_free_electricity.ics"
-  timezone: "GMT"  # Timezone for the calendar events
+  timezone: "Europe/London"  # Timezone for the calendar events (handles BST automatically)
 
   # Calendar alarms (notifications built into the iCal file)
   # These are triggered by YOUR calendar app (Apple Calendar, Google Calendar, etc.)
@@ -35,7 +35,7 @@ ical:
 # NOTE: These are LIVE notifications sent via Apprise (Discord, Telegram, etc.)
 # They are separate from calendar alarms above. You can enable one, both, or neither.
 notifications:
-  enabled: true  # Set to false to disable Apprise notifications
+  enabled: false  # Set to true to enable Apprise notifications
 
   # How often to check if notifications should be sent (in minutes)
   # Recommended: 5 minutes (ensures notifications aren't missed)

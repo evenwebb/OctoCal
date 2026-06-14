@@ -35,6 +35,9 @@ def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f) or {}
 
+    if not config:
+        logging.warning("Configuration file is empty; using defaults")
+
     # Ensure output directory exists
     output_dir = Path(get_config_value(config, 'ical.output_dir', './output'))
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -101,6 +104,7 @@ class SessionTracker:
         self.notified_upcoming: Set[str] = set()
         self.notified_start: Set[str] = set()
         self.notified_end: Set[str] = set()
+        self._dirty = False
         self._load_state()
 
     def _load_state(self) -> None:
@@ -118,7 +122,9 @@ class SessionTracker:
                 logging.error(f"Failed to load state: {e}")
 
     def _save_state(self) -> None:
-        """Save state to file."""
+        """Save state to file if dirty."""
+        if not self._dirty:
+            return
         try:
             self.state_file.parent.mkdir(parents=True, exist_ok=True)
             with open(self.state_file, 'w') as f:
@@ -128,9 +134,14 @@ class SessionTracker:
                     'notified_start': list(self.notified_start),
                     'notified_end': list(self.notified_end),
                 }, f, indent=2)
+            self._dirty = False
             logging.debug("Saved state")
         except (OSError, TypeError) as e:
             logging.error(f"Failed to save state: {e}")
+
+    def flush_state(self) -> None:
+        """Flush state to disk if dirty. Call after batch operations."""
+        self._save_state()
 
     def is_new_session(self, session_str: str) -> bool:
         """Check if session is new."""
@@ -139,7 +150,7 @@ class SessionTracker:
     def mark_seen(self, session_str: str) -> None:
         """Mark session as seen."""
         self.seen_sessions.add(session_str)
-        self._save_state()
+        self._dirty = True
 
     def should_notify_upcoming(self, session_str: str) -> bool:
         """Check if upcoming notification should be sent."""
@@ -148,7 +159,7 @@ class SessionTracker:
     def mark_notified_upcoming(self, session_str: str) -> None:
         """Mark upcoming notification as sent."""
         self.notified_upcoming.add(session_str)
-        self._save_state()
+        self._dirty = True
 
     def should_notify_start(self, session_str: str) -> bool:
         """Check if start notification should be sent."""
@@ -157,7 +168,7 @@ class SessionTracker:
     def mark_notified_start(self, session_str: str) -> None:
         """Mark start notification as sent."""
         self.notified_start.add(session_str)
-        self._save_state()
+        self._dirty = True
 
     def should_notify_end(self, session_str: str) -> bool:
         """Check if end notification should be sent."""
@@ -166,19 +177,22 @@ class SessionTracker:
     def mark_notified_end(self, session_str: str) -> None:
         """Mark end notification as sent."""
         self.notified_end.add(session_str)
-        self._save_state()
+        self._dirty = True
 
 
 class OctopusEnergyMonitor:
     """Main application class."""
 
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config.yaml", dry_run: bool = False):
         """
         Initialize monitor.
 
         Args:
             config_path: Path to configuration file
+            dry_run: If True, skip notification sending and file writing
         """
+        self.dry_run = dry_run
+
         # Load configuration
         self.config = load_config(config_path)
 
@@ -187,7 +201,7 @@ class OctopusEnergyMonitor:
 
         # Initialize components
         scraper_url = get_config_value(self.config, 'scraper.url', 'https://octopus.energy/free-electricity/')
-        timezone = get_config_value(self.config, 'ical.timezone', 'GMT')
+        timezone = get_config_value(self.config, 'ical.timezone', 'Europe/London')
         apprise_urls = get_config_value(self.config, 'notifications.apprise_urls', [])
         apprise_urls = [url for url in apprise_urls if url]  # Filter empty strings
 
@@ -205,6 +219,8 @@ class OctopusEnergyMonitor:
             notify_start=get_config_value(self.config, 'notifications.notify_start', True),
             notify_end=get_config_value(self.config, 'notifications.notify_end', True)
         )
+        if dry_run:
+            self.notifier.enabled = False
 
         # Initialize session tracker
         output_dir = Path(get_config_value(self.config, 'ical.output_dir', './output'))
@@ -261,33 +277,34 @@ class OctopusEnergyMonitor:
         # Parse sessions
         new_sessions_found = False
         for session_str in session_strings:
-            # Check if we've seen this session before
+            # Parse once, use the result in both branches
+            session = self.parser.parse(session_str)
+            if not session:
+                logging.warning(f"Failed to parse session: {session_str}")
+                continue
+
             if self.tracker.is_new_session(session_str):
-                session = self.parser.parse(session_str)
-                if session:
-                    self.sessions.append(session)
-                    self._session_strs.add(session_str)
-                    self.tracker.mark_seen(session_str)
-                    new_sessions_found = True
-                    logging.info(f"New session: {session_str}")
+                self.sessions.append(session)
+                self._session_strs.add(session_str)
+                self.tracker.mark_seen(session_str)
+                new_sessions_found = True
+                logging.info(f"New session: {session_str}")
 
-                    # Log to history
-                    self.history_logger.add_session(session)
+                # Log to history
+                self.history_logger.add_session(session)
 
-                    # Notify about new session (only if it's a "next" session type)
-                    if session_type == 'next' and self.notifier.enabled:
-                        self.notifier.notify_new_session(session)
-                else:
-                    logging.warning(f"Failed to parse session: {session_str}")
+                # Notify about new session (only if it's a "next" session type)
+                if session_type == 'next' and self.notifier.enabled:
+                    self.notifier.notify_new_session(session)
             else:
                 # Session already known, add to list if not already there
-                session = self.parser.parse(session_str)
-                if session:
-                    # Log to history (will skip if already exists)
-                    self.history_logger.add_session(session)
-                    if session_str not in self._session_strs:
-                        self._session_strs.add(session_str)
-                        self.sessions.append(session)
+                self.history_logger.add_session(session)
+                if session_str not in self._session_strs:
+                    self._session_strs.add(session_str)
+                    self.sessions.append(session)
+
+        # Flush state after batch of mark_seen calls
+        self.tracker.flush_state()
 
         return new_sessions_found
 
@@ -379,6 +396,9 @@ class OctopusEnergyMonitor:
                 self.notifier.notify_session_ending(session)
                 self.tracker.mark_notified_end(session.session_str)
 
+        # Flush state once after the loop (batched save)
+        self.tracker.flush_state()
+
     def cleanup_old_sessions(self) -> None:
         """Remove sessions that have already ended."""
         now = datetime.now()
@@ -395,14 +415,18 @@ class OctopusEnergyMonitor:
             # Scrape for new sessions
             self.scrape_sessions()
 
-            # Update iCal file
-            self.update_ical()
+            if self.dry_run:
+                logging.info("DRY RUN: Skipping file writes and notifications")
+            else:
+                # Update iCal file
+                self.update_ical()
 
             # Cleanup old sessions
             self.cleanup_old_sessions()
 
-            # Flush history logger (saves all pending changes in one write)
-            self.history_logger.flush()
+            if not self.dry_run:
+                # Flush history logger (saves all pending changes in one write)
+                self.history_logger.flush()
 
         except Exception as e:
             logging.error(f"Error in scrape cycle: {e}", exc_info=True)
@@ -413,8 +437,9 @@ class OctopusEnergyMonitor:
             # Check for notifications
             self.check_notifications()
 
-            # Update iCal file (in case sessions changed)
-            self.update_ical()
+            if not self.dry_run:
+                # Update iCal file (in case sessions changed)
+                self.update_ical()
 
         except Exception as e:
             logging.error(f"Error in notification cycle: {e}", exc_info=True)
@@ -503,7 +528,7 @@ def main():
             config_path = 'config.yaml'
 
     try:
-        monitor = OctopusEnergyMonitor(config_path)
+        monitor = OctopusEnergyMonitor(config_path, dry_run=args.dry_run)
 
         # Validate config and log warnings (#11)
         cfg_warnings = validate_config(monitor.config)

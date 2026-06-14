@@ -28,12 +28,12 @@ class Session:
 class SessionParser:
     """Parser for session strings like '12-2pm, Saturday 4th October'."""
 
-    def __init__(self, timezone: str = 'GMT'):
+    def __init__(self, timezone: str = 'Europe/London'):
         """
         Initialize parser.
 
         Args:
-            timezone: Timezone for sessions (currently assumes GMT)
+            timezone: IANA timezone name (e.g., 'Europe/London')
         """
         self.timezone = timezone
 
@@ -93,31 +93,40 @@ class SessionParser:
         Returns:
             datetime object or None if parsing fails
         """
-        # Parse time
-        match = re.match(r'(\d+)(am|pm)?', time_str.lower())
-        if not match:
-            return None
-
-        hour = int(match.group(1))
-        ampm = match.group(2)
-
-        # If no AM/PM marker on this time, try to infer from the full time range
-        if not ampm and full_time_range:
-            range_match = re.search(r'(am|pm)', full_time_range.lower())
-            if range_match:
-                ampm = range_match.group(1)
-
-        # Default to AM if still no marker (except for 12 which defaults to PM)
-        if not ampm:
-            ampm = 'pm' if hour == 12 else 'am'
-
-        # Convert to 24-hour format
-        if ampm == 'pm' and hour != 12:
-            hour += 12
-        elif ampm == 'am' and hour == 12:
+        # Handle text-based time names
+        time_lower = time_str.lower()
+        if time_lower == 'midnight':
             hour = 0
+            minute = 0
+        elif time_lower == 'noon':
+            hour = 12
+            minute = 0
+        else:
+            # Parse numeric time
+            match = re.match(r'(\d+)(am|pm)?', time_lower)
+            if not match:
+                return None
 
-        minute = 0  # Assume on the hour
+            hour = int(match.group(1))
+            ampm = match.group(2)
+
+            # If no AM/PM marker on this time, try to infer from the full time range
+            if not ampm and full_time_range:
+                range_match = re.search(r'(am|pm)', full_time_range.lower())
+                if range_match:
+                    ampm = range_match.group(1)
+
+            # Default to AM if still no marker (except for 12 which defaults to PM)
+            if not ampm:
+                ampm = 'pm' if hour == 12 else 'am'
+
+            # Convert to 24-hour format
+            if ampm == 'pm' and hour != 12:
+                hour += 12
+            elif ampm == 'am' and hour == 12:
+                hour = 0
+
+            minute = 0  # Assume on the hour
 
         # Parse date
         # Remove ordinal suffix from date
@@ -157,20 +166,3 @@ class SessionParser:
 
         return result
 
-    def get_upcoming_notification_time(
-        self, session: Session, hours_before: int
-    ) -> Optional[datetime]:
-        """
-        Get the time for upcoming notification.
-
-        Args:
-            session: Session object
-            hours_before: Hours before session to notify
-
-        Returns:
-            datetime for notification or None if already passed
-        """
-        notification_time = session.start_time - timedelta(hours=hours_before)
-        if notification_time <= datetime.now():
-            return None
-        return notification_time

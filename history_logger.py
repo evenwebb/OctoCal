@@ -3,9 +3,8 @@
 import json
 import logging
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Tuple, Set
-from collections import defaultdict
+from datetime import datetime
+from typing import List, Dict, Any, Set
 from session_parser import Session
 
 
@@ -177,60 +176,6 @@ class HistoryLogger:
                 except ValueError:
                     logger.warning(f"Invalid end_time format: {end_time_str}")
         return sorted(historic, key=lambda x: x.get("start_time", ""), reverse=True)
-
-    def calculate_statistics(self) -> Dict[str, Any]:
-        """
-        Calculate statistics for historic sessions.
-
-        Returns:
-            Dictionary with statistics
-        """
-        historic_sessions = self.get_historic_sessions()
-
-        if not historic_sessions:
-            return {
-                "total_sessions": 0,
-                "total_hours": 0.0,
-                "average_duration_hours": 0.0,
-                "longest_session": None,
-                "shortest_session": None,
-                "sessions_per_month": {},
-                "hours_per_month": {}
-            }
-
-        # Basic statistics
-        total_sessions = len(historic_sessions)
-        total_hours = sum(s.get("duration_hours", 0) for s in historic_sessions)
-        average_duration = total_hours / total_sessions if total_sessions > 0 else 0.0
-
-        # Find longest and shortest sessions
-        longest_session = max(historic_sessions, key=lambda x: x.get("duration_hours", 0))
-        shortest_session = min(historic_sessions, key=lambda x: x.get("duration_hours", 0))
-
-        # Monthly breakdown
-        sessions_per_month: Dict[str, int] = defaultdict(int)
-        hours_per_month: Dict[str, float] = defaultdict(float)
-
-        for session_dict in historic_sessions:
-            start_time_str = session_dict.get("start_time")
-            if start_time_str:
-                try:
-                    start_time = datetime.fromisoformat(start_time_str)
-                    month_key = start_time.strftime("%Y-%m")
-                    sessions_per_month[month_key] += 1
-                    hours_per_month[month_key] += session_dict.get("duration_hours", 0)
-                except ValueError:
-                    logger.warning(f"Invalid start_time format: {start_time_str}")
-
-        return {
-            "total_sessions": total_sessions,
-            "total_hours": round(total_hours, 2),
-            "average_duration_hours": round(average_duration, 2),
-            "longest_session": longest_session,
-            "shortest_session": shortest_session,
-            "sessions_per_month": dict(sorted(sessions_per_month.items())),
-            "hours_per_month": {k: round(v, 2) for k, v in sorted(hours_per_month.items())}
-        }
 
     def export_upcoming_sessions(self, output_file: Path) -> None:
         """

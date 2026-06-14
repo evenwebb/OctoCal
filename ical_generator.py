@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List
+from zoneinfo import ZoneInfo
 from icalendar import Calendar, Event, Alarm, vText
 from session_parser import Session
 
@@ -15,16 +16,17 @@ logger = logging.getLogger(__name__)
 class ICalGenerator:
     """Generator for iCal calendar files."""
 
-    def __init__(self, timezone: str = 'GMT', alarms_enabled: bool = True, alarm_times: List[int] = None):
+    def __init__(self, timezone: str = 'Europe/London', alarms_enabled: bool = True, alarm_times: List[int] = None):
         """
         Initialize iCal generator.
 
         Args:
-            timezone: Timezone for events
+            timezone: Timezone for events (IANA timezone name, e.g. 'Europe/London')
             alarms_enabled: Whether to add alarms to events
             alarm_times: List of minutes before event to add alarms (e.g., [60, 15, 0])
         """
-        self.timezone = timezone
+        self.timezone_str = timezone
+        self.timezone = ZoneInfo(timezone)
         self.alarms_enabled = alarms_enabled
         self.alarm_times = alarm_times or [60, 15, 0]
 
@@ -47,9 +49,9 @@ class ICalGenerator:
         cal.add('calscale', 'GREGORIAN')
         cal.add('method', 'PUBLISH')
         cal.add('x-wr-calname', vText('Octopus Free Electricity'))
-        cal.add('x-wr-timezone', vText(self.timezone))
-        cal.add('REFRESH-INTERVAL;VALUE=DURATION', vText('PT3H'))
-        cal.add('X-PUBLISHED-TTL', vText('PT3H'))
+        cal.add('x-wr-timezone', vText(self.timezone_str))
+        cal.add('REFRESH-INTERVAL', timedelta(hours=3))
+        cal.add('X-PUBLISHED-TTL', timedelta(hours=3))
         if sessions:
             description = 'Free electricity sessions from Octopus Energy'
         else:
@@ -65,12 +67,11 @@ class ICalGenerator:
             event.add('summary', vText('Octopus Free Electricity'))
             event.add('dtstart', session.start_time)
             event.add('dtend', session.end_time)
-            # Use session start for deterministic output (avoids unnecessary deployments when unchanged)
-            event.add('dtstamp', session.start_time)
+            event.add('dtstamp', datetime.now(ZoneInfo("UTC")))
 
             # Generate unique UID based on session string and start time
             uid_seed = f"{session.session_str}|{session.start_time.isoformat()}"
-            uid = f"{hashlib.sha1(uid_seed.encode()).hexdigest()}@octopus.energy"
+            uid = f"{hashlib.sha256(uid_seed.encode()).hexdigest()}@octopus.energy"
             event.add('uid', uid)
 
             # Add description
