@@ -9,6 +9,10 @@ OctoCal automatically scrapes the Octopus Energy website for free electricity sl
 
 ## Features
 
+- **Days-since counter** with interactive heatmap for visualizing event recency
+- **Event statistics** dashboard with session counts, durations, and trends
+- **JSON-LD** structured data for better calendar sharing and SEO
+
 ### Core Functionality
 - 🐙 Scrapes https://octopus.energy/free-electricity/ for upcoming free electricity sessions
 - 📅 Generates iCal (.ics) calendar file with GMT timezone
